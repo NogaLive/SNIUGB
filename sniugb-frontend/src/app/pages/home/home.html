@@ -1,0 +1,28 @@
+<section class="hero-section">
+  <div class="hero-content">
+    <h1>Sistema Nacional de Identificación Única de Ganado Bovino</h1>
+    <p class="subtitle">
+      La tecnología que transforma la ganadería en el Perú. Conectamos a los productores con un sistema de identificación y trazabilidad que te permite registrar, monitorear y acceder al historial completo de tu ganado de forma simple y segura.
+    </p>
+    <a href="#" class="chatbot-button">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M20.52 3.441a10.96 10.96 0 0 0-15.492 0A10.96 10.96 0 0 0 3.44 19l-3.44 3.441L3.44 20.52a10.96 10.96 0 0 0 17.08-.04zm-5.01 11.751c-.24.03-1.44-.42-2.13-1.11-.72-.69-1.14-1.62-1.2-1.74-.06-.12-.48-.72-.48-1.38s.42-1.02.6-1.2c.18-.18.39-.24.57-.24.18 0 .36.03.48.03s.27-.03.45.42c.18.45.63 1.53.69 1.65.06.12.12.27 0 .42-.12.15-.27.3-.42.45-.15.15-.3.21-.45.33-.15.12-.3.27-.15.51.15.24.69.93 1.47 1.68.96.93 1.74 1.23 2.01 1.38.27.15.42.12.6-.06.18-.18.78-.75.99-.99.21-.24.42-.18.69-.12.27.06 1.74.84 2.01.99.27.15.45.21.51.33.06.12.06.72-.12 1.38-.18.66-1.08 1.23-1.5 1.41z"/></svg>
+      <span>Servicio Chatbot</span>
+    </a>
+  </div>
+</section>
+
+<main>
+  <section class="articles-section">
+    <h2>Artículos informativos</h2>
+    <div class="carousel">
+      <a [routerLink]="['/publicaciones']" [queryParams]="{categoria: categoria.nombre}" class="article-card" *ngFor="let categoria of categorias">
+        <div class="card-image-wrapper">
+          <img [src]="categoria.imagen_url" [alt]="categoria.nombre">
+          <div class="card-title-overlay">
+            <h3>{{ categoria.nombre }} &gt;</h3>
+          </div>
+        </div>
+      </a>
+    </div>
+  </section>
+</main>

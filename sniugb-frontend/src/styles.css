@@ -1,0 +1,57 @@
+/* --- Paleta de Colores y Estilos Globales de tu Marca --- */
+:root {
+  --color-brand-red: #BF0909;
+  --color-action-blue: #0056AC;
+  --color-whatsapp-green: #128C7E;
+  --color-text-dark: #26292E;
+  --color-text-muted: #6C757D;
+  --color-bg-light: #F8F9FA;
+  --color-border: #DEE2E6;
+  --color-card-bg: #FFFFFF;
+}
+
+body {
+  font-family: 'Lexend', sans-serif; /* <-- Tipografía global */
+  margin: 0;
+  background-color: var(--color-card-bg);
+  color: var(--color-text-dark);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+main {
+  /* Contenedor principal para centrar el contenido */
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+}
+
+/* Estilos de botones reutilizables */
+.btn {
+  display: inline-block;
+  padding: 10px 22px;
+  border-radius: 6px;
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 0.9rem;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+}
+.btn-primary {
+  background-color: var(--color-action-blue);
+  border-color: var(--color-action-blue);
+  color: #fff;
+}
+.btn-primary:hover {
+  opacity: 0.9;
+}
+.btn-secondary {
+  background-color: transparent;
+  border-color: var(--color-action-blue);
+  color: var(--color-action-blue);
+}
+.btn-secondary:hover {
+  background-color: var(--color-action-blue);
+  color: #fff;
+}

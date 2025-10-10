@@ -1,0 +1,52 @@
+.public-header {
+  background-color: #fff;
+  border-bottom: 1px solid var(--color-border);
+  padding: 0 1.5rem;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 70px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.logo {
+  font-weight: 700;
+  font-size: 1.6rem;
+  color: var(--color-brand-red);
+  text-decoration: none;
+}
+
+.main-nav {
+  display: flex;
+  gap: 2.5rem;
+}
+
+.main-nav a {
+  text-decoration: none;
+  color: var(--color-text-dark);
+  font-weight: 500;
+  padding: 0.5rem 0;
+  border-bottom: 3px solid transparent;
+  transition: color 0.2s, border-color 0.2s;
+}
+
+.main-nav a:hover {
+  color: var(--color-brand-red);
+}
+
+.main-nav a.active {
+  color: var(--color-brand-red);
+  border-bottom-color: var(--color-brand-red);
+}
+
+.auth-buttons {
+  display: flex;
+  gap: 0.75rem;
+}
