@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Request, HTTPException
+from fastapi.routing import APIRoute
 import os
 import requests
 import json
@@ -13,7 +14,11 @@ VERIFY_TOKEN = os.getenv("VERIFY_TOKEN")
 API_VERSION = "v19.0" # Usa una versión reciente de la API de Graph
 API_URL = f"https://graph.facebook.com/{API_VERSION}/{WHATSAPP_PHONE_NUMBER_ID}/messages"
 
-chatbot_router = APIRouter(prefix="/whatsapp", tags=["Chatbot WhatsApp"])
+chatbot_router = APIRouter(
+    prefix="/whatsapp",
+    tags=["Chatbot WhatsApp"],
+    route_class=APIRoute
+)
 
 # Uso de una "memoria" temporal
 user_states = {}

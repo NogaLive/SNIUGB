@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.routing import APIRoute
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from typing import List
@@ -7,7 +8,11 @@ from src.services.reniec_service import get_data_from_reniec
 from src.utils.security import get_db
 from src.models.database_models import Raza, Departamento
 
-utils_router = APIRouter(prefix="/utils", tags=["Utilidades"])
+utils_router = APIRouter(
+    prefix="/utils",
+    tags=["Utilidades"],
+    route_class=APIRoute
+)
 
 # Modelo simple para las respuestas de las listas
 class SimpleResponse(BaseModel):

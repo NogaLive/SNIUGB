@@ -1,26 +1,67 @@
-/* --- Paleta de Colores y Estilos Globales de tu Marca --- */
+/* Importa la fuente profesional 'Lexend' */
+@import url('https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;700&display=swap');
+/* Importa los estilos base de Swiper.js */
+@import 'swiper/css';
+@import 'swiper/css/navigation';
+
+/* ===================================================================
+   VARIABLES Y ESTILOS BASE (Mantenidos de tu archivo)
+   =================================================================== */
 :root {
   --color-brand-red: #BF0909;
   --color-action-blue: #0056AC;
   --color-whatsapp-green: #128C7E;
   --color-text-dark: #26292E;
   --color-text-muted: #6C757D;
-  --color-bg-light: #F8F9FA;
+  --color-bg-light: #F3F8FB;
   --color-border: #DEE2E6;
   --color-card-bg: #FFFFFF;
 }
 
-body {
-  font-family: 'Lexend', sans-serif; /* <-- Tipografía global */
-  margin: 0;
-  background-color: var(--color-card-bg);
-  color: var(--color-text-dark);
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+/* ===================================================================
+   SOLUCIÓN DE LAYOUT Y FOOTER FIJO
+   =================================================================== */
+
+html {
+  /* Establece 1rem = 10px para un diseño adaptable más fácil */
+  font-size: 62.5%;
 }
 
-main {
-  /* Contenedor principal para centrar el contenido */
+body {
+  font-family: 'Lexend', sans-serif;
+  margin: 0;
+  background-color: var(--color-bg-light);
+  color: var(--color-text-dark);
+
+  /* --- INICIO DE LA CORRECCIÓN --- */
+  /* El body ocupa como mínimo el 100% de la altura de la ventana */
+  min-height: 100vh;
+  /* Se convierte en un contenedor flexible para organizar sus hijos (app-root) */
+  display: flex;
+  flex-direction: column;
+}
+
+/* El componente raíz de Angular debe ser flexible para pasarle el control a su contenido */
+app-root {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1; /* Permite que <app-root> ocupe todo el espacio disponible en el body */
+}
+
+/* Se aplica a la etiqueta <main> que contiene <router-outlet> en tu app.ts */
+main.main-container {
+  flex-grow: 1; /* ¡Esta es la regla clave! Empuja el footer hacia abajo */
+  display: flex;
+  flex-direction: column;
+}
+/* --- FIN DE LA CORRECCIÓN --- */
+
+
+/* ===================================================================
+   CLASES DE UTILIDAD (Mantenidas de tu archivo)
+   =================================================================== */
+
+.container {
   max-width: 1200px;
   margin: 0 auto;
   padding: 0 1.5rem;
@@ -33,7 +74,8 @@ main {
   border-radius: 6px;
   text-decoration: none;
   font-weight: 500;
-  font-size: 0.9rem;
+  /* Se usa rem para que el botón escale con el tamaño de fuente base */
+  font-size: 1.4rem;
   border: 2px solid transparent;
   cursor: pointer;
   transition: all 0.2s ease-in-out;
@@ -42,9 +84,6 @@ main {
   background-color: var(--color-action-blue);
   border-color: var(--color-action-blue);
   color: #fff;
-}
-.btn-primary:hover {
-  opacity: 0.9;
 }
 .btn-secondary {
   background-color: transparent;

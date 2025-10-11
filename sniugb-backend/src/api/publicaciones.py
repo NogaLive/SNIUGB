@@ -1,39 +1,75 @@
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
+from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy.orm import Session, joinedload
 from typing import List
-from sqlalchemy import distinct
 
 from src.utils.security import get_db
-from src.models.database_models import Articulo
-from src.models.articulo_models import ArticuloResponseSchema
+from src.models import database_models as models
+# CORRECCIÓN: Importamos los esquemas correctos desde admin_models
+from src.models.admin_models import ArticulosResponse, ArticuloSchema 
 
-publicaciones_router = APIRouter(prefix="/publicaciones", tags=["Publicaciones"])
+publicaciones_router = APIRouter(
+    # CORRECCIÓN: Añadimos el prefijo /api para consistencia
+    prefix="/api/publicaciones",
+    tags=["Publicaciones Públicas"],
+)
 
-@publicaciones_router.get("/", response_model=List[ArticuloResponseSchema])
-async def get_publicaciones(skip: int = 0, limit: int = 10, categoria: str | None = None, db: Session = Depends(get_db)):
-    """Obtiene una lista paginada de artículos, con filtro opcional por categoría."""
-    query = db.query(Articulo).filter(Articulo.estado_publicacion == "publicado")
-    if categoria:
-        query = query.filter(Articulo.categoria == categoria)
+@publicaciones_router.get("/", response_model=ArticulosResponse)
+def get_publicaciones(
+    db: Session = Depends(get_db),
+    page: int = Query(1, ge=1),
+    limit: int = Query(6, ge=1),
+    categoria_id: int | None = Query(None)
+):
+    """
+    Obtiene una lista paginada de artículos para el público, con filtro opcional por ID de categoría.
+    Devuelve un objeto con la lista de artículos y metadatos de paginación.
+    """
+    # 1. Construimos la consulta base con carga optimizada de relaciones (JOINs)
+    query = db.query(models.Articulo).options(
+        joinedload(models.Articulo.categoria),
+        joinedload(models.Articulo.autor)
+    ).filter(models.Articulo.estado_publicacion == "publicado")
+
+    # 2. Aplicamos el filtro si se proporciona un ID de categoría
+    if categoria_id is not None:
+        query = query.filter(models.Articulo.categoria_id == categoria_id)
+        
+    # 3. Calculamos el total de artículos (después de filtrar)
+    total_articulos = query.count()
     
-    articulos = query.order_by(Articulo.fecha_publicacion.desc()).offset(skip).limit(limit).all()
-    return articulos
+    # 4. Aplicamos la paginación
+    offset = (page - 1) * limit
+    articulos = query.order_by(models.Articulo.fecha_publicacion.desc()).offset(offset).limit(limit).all()
+    
+    # 5. Calculamos el total de páginas
+    total_pages = (total_articulos + limit - 1) // limit
 
-@publicaciones_router.get("/categorias", response_model=List[str])
-async def get_categorias_de_articulos(db: Session = Depends(get_db)):
-    """
-    Obtiene una lista de todas las categorías de artículos únicas que existen.
-    """
-    # Consulta a la base de datos para obtener valores únicos de la columna 'categoria'
-    categorias_tuplas = db.query(distinct(Articulo.categoria)).all()
-    # Convierte la lista de tuplas a una lista simple de strings
-    categorias = [categoria[0] for categoria in categorias_tuplas]
-    return categorias
+    # 6. Devolvemos la respuesta en el formato que el frontend espera
+    return {
+        "articulos": articulos,
+        "total": total_articulos,
+        "page": page,
+        "pages": total_pages
+    }
 
-@publicaciones_router.get("/{articulo_id}", response_model=ArticuloResponseSchema)
-async def get_articulo_by_id(articulo_id: int, db: Session = Depends(get_db)):
-    """Obtiene el detalle de un artículo específico."""
-    articulo = db.query(Articulo).filter(Articulo.id == articulo_id, Articulo.estado_publicacion == "publicado").first()
+
+@publicaciones_router.get("/{articulo_slug}", response_model=ArticuloSchema)
+def get_articulo_by_slug(articulo_slug: str, db: Session = Depends(get_db)):
+    """Obtiene el detalle de un artículo específico por su SLUG."""
+    articulo = db.query(models.Articulo).options(
+        joinedload(models.Articulo.categoria),
+        joinedload(models.Articulo.autor)
+    ).filter(
+        models.Articulo.slug == articulo_slug, 
+        models.Articulo.estado_publicacion == "publicado"
+    ).first()
+    
     if not articulo:
         raise HTTPException(status_code=404, detail="Artículo no encontrado.")
+    
+    # Incrementar el contador de vistas
+    articulo.vistas += 1
+    db.commit()
+    db.refresh(articulo)
+    
     return articulo

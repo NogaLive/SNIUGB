@@ -1,11 +1,16 @@
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.routing import APIRoute
 from sqlalchemy.orm import Session
 from typing import List
 from src.utils.security import get_current_user, get_db
 from src.models.database_models import Usuario, Predio, InventarioItem, InventarioCategoria
 from src.models.inventario_models import InventarioItemCreateSchema, InventarioItemResponseSchema, InventarioItemUpdateSchema
 
-inventario_router = APIRouter(prefix="/inventario", tags=["Inventario"])
+inventario_router = APIRouter(
+    prefix="/inventario",
+    tags=["Inventario"],
+    route_class=APIRoute
+)
 
 @inventario_router.post("/{predio_codigo}", response_model=InventarioItemResponseSchema, status_code=status.HTTP_201_CREATED)
 async def create_inventario_item(

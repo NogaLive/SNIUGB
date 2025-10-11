@@ -1,0 +1,212 @@
+:host {
+  display: block;
+  background-color: #fff;
+  padding: 3rem 0; /* Espaciado superior e inferior para la página */
+}
+
+.publications-container {
+  max-width: 120rem;
+  margin: 0 auto;
+  padding: 0 2rem;
+}
+
+/* --- ESTILOS CORREGIDOS PARA EL FILTRO DE TEXTO --- */
+.filter-bar {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4rem; /* Espacio generoso entre categorías */
+  margin-bottom: 6rem;
+}
+
+.filter-item {
+  position: relative; /* Necesario para posicionar el separador */
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.5rem;
+}
+
+/* El span es ahora el contenedor del texto visible y su placeholder */
+.filter-item span {
+  display: block; /* O inline-block */
+  position: relative; /* Contexto para el ::before */
+
+  /* Estilos de tipografía base (estado inactivo) */
+  font-family: 'Lexend', sans-serif;
+  font-size: 1.5rem;
+  font-weight: 300; /* 'Light' */
+  text-transform: uppercase;
+  color: #26292E;
+  transition: transform 0.2s ease, color 0.2s ease, font-weight 0.2s ease;
+}
+
+/* SOLUCIÓN: El pseudo-elemento ::before actúa como el placeholder invisible */
+.filter-item span::before {
+  content: attr(data-text); /* Lee el texto desde el atributo data-text */
+  display: block;
+  font-weight: 600; /* Siempre está en 'SemiBold' para reservar el espacio */
+  visibility: hidden; /* Lo hace invisible pero sigue ocupando espacio */
+  height: 0; /* Evita que el placeholder añada altura extra */
+}
+
+/* Al hacer hover, solo cambia el color del span visible */
+.filter-item:hover span {
+  color: #BF0909;
+  transform: scale(1.1);
+}
+
+/* Al estar activo, cambia el color y el grosor del span visible */
+.filter-item.active span {
+  color: #BF0909;
+  font-weight: 600; /* 'SemiBold' */
+}
+
+/* La línea separadora se mantiene igual */
+.filter-item::after {
+  content: '';
+  position: absolute;
+  right: -2rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 2px;
+  height: 30px;
+  background-color: #26292E;
+}
+
+.filter-bar .filter-item:last-child::after {
+  display: none;
+}
+
+/* --- Estilos para la Parrilla (Grid) de Artículos --- */
+.articles-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 5rem 4rem;
+}
+
+.article-entry {
+  display: flex;
+  flex-direction: column;
+}
+
+.article-image {
+  width: 100%;
+  aspect-ratio: 350 / 200;
+  overflow: hidden;
+  border-radius: 8px;
+}
+
+.article-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.article-entry:hover .article-image img {
+  transform: scale(1.05);
+}
+
+.article-content {
+  padding-top: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+}
+
+.article-content a {
+  text-decoration: none;
+  color: inherit;
+}
+
+.article-content .category-tag {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #BF0909;
+  margin-bottom: 1rem;
+  text-decoration: none;
+}
+.article-content .category-tag:hover {
+  text-decoration: underline;
+}
+
+.article-content h2 {
+  font-size: 2.4rem;
+  margin: 0 0 1rem 0;
+  line-height: 1.3;
+}
+
+.article-content p {
+  font-size: 1.6rem;
+  color: #6C757D;
+  line-height: 1.6;
+  flex-grow: 1;
+}
+
+.article-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 2rem;
+}
+
+.author-tag, .views-counter {
+  font-size: 1.5rem;
+  color: #6C757D;
+}
+
+.views-counter {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.views-counter img {
+  width: 2rem;
+  height: 2rem;
+}
+
+/* --- Estilos para la Paginación --- */
+.pagination-controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 8rem;
+}
+
+.pagination-controls button {
+  padding: 1rem 1.5rem;
+  border: 1px solid #DEE2E6;
+  background-color: #fff;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1.6rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.pagination-controls button:hover:not(:disabled) {
+  border-color: #BF0909;
+  color: #BF0909;
+}
+
+.pagination-controls button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pagination-controls .page-number.active {
+  background-color: #BF0909;
+  color: #fff;
+  border-color: #BF0909;
+}
+
+/* --- Diseño Adaptable para Móviles --- */
+@media (max-width: 992px) {
+  .articles-grid {
+    grid-template-columns: 1fr;
+  }
+}

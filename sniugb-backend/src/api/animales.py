@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.routing import APIRoute
 from sqlalchemy.orm import Session
 
 from src.utils.security import get_current_user, get_db
@@ -12,7 +13,11 @@ from src.models.animal_models import (
 )
 from src.models.evento_models import EventoSanitarioCreateSchema, EventoProduccionCreateSchema
 
-animales_router = APIRouter(prefix="/animales", tags=["Animales (Individual)"])
+animales_router = APIRouter(
+    prefix="/animales",
+    tags=["Animales (Individual)"],
+    route_class=APIRoute
+)
 
 @animales_router.get("/{cui}", response_model=AnimalDetailResponseSchema)
 async def get_animal_detail(

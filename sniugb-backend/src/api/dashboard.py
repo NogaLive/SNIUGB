@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.routing import APIRoute
 from sqlalchemy.orm import Session
 from sqlalchemy import func, case, Float
 from datetime import datetime, timedelta
@@ -6,7 +7,11 @@ from src.utils.security import get_current_user, get_db
 from src.models.database_models import Usuario, Predio, Animal, EventoProduccion, Transferencia, TransferenciaEstado, AnimalCondicionSalud
 from src.models.dashboard_models import KPISchema
 
-dashboard_router = APIRouter(prefix="/dashboard", tags=["Dashboard"])
+dashboard_router = APIRouter(
+    prefix="/dashboard",
+    tags=["Dashboard"],
+    route_class=APIRoute
+)
 
 @dashboard_router.get("/{predio_codigo}/kpis", response_model=KPISchema)
 async def get_dashboard_kpis(

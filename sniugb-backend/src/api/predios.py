@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi.routing import APIRoute
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from typing import List, Optional
@@ -9,7 +10,11 @@ from src.models.predio_models import PredioCreateSchema, PredioResponseSchema
 from src.models.animal_models import AnimalCreateSchema, AnimalResponseSchema
 from src.services.animal_service import generar_nuevo_cui
 
-predios_router = APIRouter(prefix="/predios", tags=["Predios"])
+predios_router = APIRouter(
+    prefix="/predios",
+    tags=["Predios"],
+    route_class=APIRoute
+)
 
 @predios_router.post("/", response_model=PredioResponseSchema, status_code=status.HTTP_201_CREATED)
 async def create_predio(

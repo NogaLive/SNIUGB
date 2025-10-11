@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.routing import APIRoute
 from sqlalchemy.orm import Session
 from typing import List
-from datetime import datetime, timezone, timedelta
 
 from src.utils.security import get_current_user, get_db
 from src.models.database_models import (
@@ -11,7 +11,11 @@ from src.models.database_models import (
 from src.models.transferencia_models import TransferenciaCreateSchema, TransferenciaResponseSchema, TransferenciaApproveSchema
 from src.services.notification_service import send_transfer_request_email, send_transfer_request_whatsapp
 
-transferencias_router = APIRouter(prefix="/transferencias", tags=["Transferencias"])
+transferencias_router = APIRouter(
+    prefix="/transferencias",
+    tags=["Transferencias"],
+    route_class=APIRoute
+)
 
 @transferencias_router.post("/solicitar", response_model=TransferenciaResponseSchema, status_code=status.HTTP_201_CREATED)
 async def solicitar_transferencia(

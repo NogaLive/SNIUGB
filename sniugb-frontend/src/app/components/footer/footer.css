@@ -1,28 +1,40 @@
 .public-footer {
   background-color: #343a40;
-  color: #adb5bd;
-  padding: 1rem 1.5rem;
+  color: #ffffff;
+  padding: 0 1.5rem; 
+  height: 60px; 
+  display: flex;
+  align-items: center;
+  font-size: 1.7rem;
 }
 
 .footer-content {
-  max-width: 1200px;
+  max-width: 1870px;
   margin: 0 auto;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  width: 100%;
 }
 
 .social-links {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 2rem;
 }
 
 .social-links a {
   color: #adb5bd;
   transition: color 0.2s;
+  display: inline-flex;
+  align-items: center;
 }
 
 .social-links a:hover {
   color: #fff;
+}
+
+.social-links svg {
+  width: 2.5rem;
+  height: 2.5rem;
 }

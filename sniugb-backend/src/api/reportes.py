@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException
+from fastapi.routing import APIRoute
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from sqlalchemy.inspection import inspect
@@ -12,7 +13,11 @@ from src.models.database_models import (
 )
 from src.models.reporte_models import ReporteCreateSchema
 
-reportes_router = APIRouter(prefix="/reportes", tags=["Reportes"])
+reportes_router = APIRouter(
+    prefix="/reportes",
+    tags=["Reportes"],
+    route_class=APIRoute
+    )
 
 TABLAS_MAP = {
     "animales": Animal,

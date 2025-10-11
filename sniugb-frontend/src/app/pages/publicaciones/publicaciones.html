@@ -1,1 +1,57 @@
-<p>publicaciones works!</p>
+<div class="publications-container">
+  <div class="filter-bar">
+    <button
+      class="filter-item"
+      [class.active]="activeCategoriaId === null"
+      (click)="seleccionarCategoria(null)">
+      <span data-text="Todos">Todos</span>
+    </button>
+    <button
+      *ngFor="let categoria of categorias"
+      class="filter-item"
+      [class.active]="activeCategoriaId === categoria.id"
+      (click)="seleccionarCategoria(categoria.id)">
+      <span [attr.data-text]="categoria.nombre">{{ categoria.nombre }}</span>
+    </button>
+  </div>
+
+  <div class="articles-grid">
+    <div class="article-entry" *ngFor="let articulo of articulos">
+      <div class="article-image">
+        <a [routerLink]="['/articulo', articulo.slug]">
+          <img [src]="backendUrl + '/static/images/articulos/thumbnails/' + articulo.imagen_thumbnail_url" [alt]="articulo.titulo">
+        </a>
+      </div>
+      <div class="article-content">
+        <a [routerLink]="[]" [queryParams]="{categoria: articulo.categoria.id}" (click)="seleccionarCategoria(articulo.categoria.id)" class="category-tag">
+          {{ articulo.categoria.nombre }}
+        </a>
+        <a [routerLink]="['/articulo', articulo.slug]">
+          <h2>{{ articulo.titulo }}</h2>
+          <p>{{ articulo.resumen }}</p>
+        </a>
+        <div class="article-meta">
+          <a [routerLink]="[]" [queryParams]="{autor: articulo.autor.id}" class="author-tag">
+            Por: {{ articulo.autor.nombre }}
+          </a>
+          <div class="views-counter">
+            <img src="assets/publicaciones/vistas-logo.svg" alt="Icono de vistas">
+            <span>{{ articulo.vistas }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="pagination-controls" *ngIf="totalPages > 1">
+    <button (click)="irAPagina(currentPage - 1)" [disabled]="currentPage === 1">Anterior</button>
+    <button
+      *ngFor="let pagina of pages"
+      class="page-number"
+      [class.active]="currentPage === pagina"
+      (click)="irAPagina(pagina)">
+      {{ pagina }}
+    </button>
+    <button (click)="irAPagina(currentPage + 1)" [disabled]="currentPage === totalPages">Siguiente</button>
+  </div>
+</div>

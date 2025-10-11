@@ -1,32 +1,39 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form
 from fastapi.responses import StreamingResponse
-from sqlalchemy.orm import Session
+from fastapi.routing import APIRoute
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import inspect
-from typing import List
-import pandas as pd
-import io
-import zipfile
 from datetime import datetime
+from typing import List
+from PIL import Image
+import pandas as pd
+import zipfile
+import shutil
+import uuid
+import io
+import os
+import aiofiles
+from slugify import slugify
 
-from src.utils.security import get_current_admin_user, get_db
+# Imports de la aplicación
+from src.utils.security import get_current_admin_user, get_db, get_current_user
 from src.models.database_models import (
-    Usuario, Base, Raza, Departamento, Articulo
+    Usuario, Base, Raza, Departamento, Articulo, Categoria, ContenidoAyuda
 )
 from src.models.user_models import UserResponseSchema
-from src.models.database_models import ContenidoAyuda, Categoria
 from src.models.soporte_models import ContenidoAyudaResponseSchema
 from src.models.admin_models import (
     RazaCreateUpdateSchema, RazaResponseSchema, 
     DepartamentoCreateUpdateSchema, DepartamentoResponseSchema,
-    ArticuloSchema, ArticuloCreateSchema, ArticuloUpdateSchema, CategoriaSchema, CategoriaCreateUpdateSchema
+    ArticuloSchema, CategoriaCreateUpdateSchema, CategoriaSchema
 )
 
-# Protegemos todo el router con una dependencia.
-# Cualquier endpoint aquí dentro requerirá que el usuario tenga el rol 'ADMIN'.
+# Router principal para la sección de administración
 admin_router = APIRouter(
     prefix="/admin", 
     tags=["Panel de Administración"],
-    dependencies=[Depends(get_current_admin_user)]
+    dependencies=[Depends(get_current_admin_user)],
+    route_class=APIRoute
 )
 
 # --- Gestión de Usuarios ---
@@ -47,17 +54,14 @@ async def toggle_user_status(dni: str, db: Session = Depends(get_db)):
     db.refresh(user)
     return user
 
-# --- Gestión de Tablas Maestras ---
-
-# --- RAZAS ---
+# --- Gestión de Tablas Maestras (Razas y Departamentos) ---
+# (Estos endpoints se mantienen como estaban, ya que son correctos)
 @admin_router.get("/razas", response_model=List[RazaResponseSchema])
 async def get_razas_admin(db: Session = Depends(get_db)):
-    """(Admin) Obtiene la lista de todas las razas."""
     return db.query(Raza).all()
 
 @admin_router.post("/razas", response_model=RazaResponseSchema, status_code=status.HTTP_201_CREATED)
 async def create_raza(raza_data: RazaCreateUpdateSchema, db: Session = Depends(get_db)):
-    """(Admin) Crea una nueva raza."""
     nueva_raza = Raza(**raza_data.model_dump())
     db.add(nueva_raza)
     db.commit()
@@ -133,29 +137,117 @@ async def get_categorias_admin(db: Session = Depends(get_db)):
     return db.query(Categoria).all()
 
 @admin_router.post("/categorias", response_model=CategoriaSchema, status_code=201)
-async def create_categoria(categoria_data: CategoriaCreateUpdateSchema, db: Session = Depends(get_db)):
-    """(Admin) Crea una nueva categoría."""
-    nueva_categoria = Categoria(**categoria_data.model_dump())
+async def create_categoria(
+    db: Session = Depends(get_db),
+    nombre: str = Form(...),
+    file: UploadFile = File(...)
+):
+    """(Admin) Crea una nueva categoría, sube una imagen y la redimensiona."""
+    file_extension = file.filename.split(".")[-1].lower()
+    if file_extension not in ["jpg", "jpeg", "png"]:
+        raise HTTPException(status_code=400, detail="Formato de imagen no válido. Usar JPG o PNG.")
+    
+    file_name = f"{uuid.uuid4()}.{file_extension}"
+    
+    original_path = f"static/images/categorias/originals/{file_name}"
+    thumbnail_path = f"static/images/categorias/thumbnails/{file_name}"
+    
+    os.makedirs("static/images/categorias/originals", exist_ok=True)
+    os.makedirs("static/images/categorias/thumbnails", exist_ok=True)
+
+    try:
+        async with aiofiles.open(original_path, 'wb') as buffer:
+            content = await file.read()
+            await buffer.write(content)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al guardar la imagen: {e}")
+
+    try:
+        with Image.open(original_path) as img:
+            img.thumbnail((800, 600)) 
+            img.save(thumbnail_path, optimize=True, quality=85)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al procesar la imagen: {e}")
+
+    # Se guarda solo el nombre del archivo en la BD
+    nueva_categoria = Categoria(nombre=nombre, imagen_url=file_name)
     db.add(nueva_categoria)
     db.commit()
     db.refresh(nueva_categoria)
+    
     return nueva_categoria
 
 @admin_router.get("/publicaciones", response_model=List[ArticuloSchema])
 async def get_all_articulos(db: Session = Depends(get_db)):
-    """(Admin) Obtiene todos los artículos publicados."""
-    return db.query(Articulo).order_by(Articulo.fecha_publicacion.desc()).all()
+    """(Admin) Obtiene todos los artículos, cargando relaciones eficientemente."""
+    articulos = db.query(Articulo).options(
+        joinedload(Articulo.categoria),
+        joinedload(Articulo.autor)
+    ).order_by(Articulo.fecha_publicacion.desc()).all()
+    return articulos
 
 @admin_router.post("/publicaciones", response_model=ArticuloSchema, status_code=status.HTTP_201_CREATED)
 async def create_articulo(
-    articulo_data: ArticuloCreateSchema, 
     db: Session = Depends(get_db),
-    admin_user: Usuario = Depends(get_current_admin_user)
+    current_user: Usuario = Depends(get_current_user), 
+    titulo: str = Form(...),
+    resumen: str = Form(...),
+    contenido_html: str = Form(...),
+    categoria_id: int = Form(...),
+    imagen_principal: UploadFile = File(...)
 ):
-    """(Admin) Crea una nueva publicación."""
+    """(Admin) Crea una nueva publicación con subida y procesamiento de imagen en 3 versiones."""
+    
+    # 1. Validación y generación de nombre de archivo
+    extension = imagen_principal.filename.split(".")[-1].lower()
+    if extension not in ["jpg", "jpeg", "png"]:
+        raise HTTPException(status_code=400, detail="Formato de imagen no válido.")
+    
+    file_name = f"{uuid.uuid4()}.{extension}"
+
+    # 2. Definición de rutas y creación de directorios
+    original_path = f"static/images/articulos/originals/{file_name}"
+    display_path = f"static/images/articulos/display/{file_name}"
+    thumbnail_path = f"static/images/articulos/thumbnails/{file_name}"
+
+    os.makedirs("static/images/articulos/originals", exist_ok=True)
+    os.makedirs("static/images/articulos/display", exist_ok=True)
+    os.makedirs("static/images/articulos/thumbnails", exist_ok=True)
+
+    # 3. Guardado del archivo original
+    try:
+        async with aiofiles.open(original_path, 'wb') as out_file:
+            content = await imagen_principal.read()
+            await out_file.write(content)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al guardar imagen original: {e}")
+
+    # 4. Procesamiento de imágenes (display y thumbnail)
+    try:
+        with Image.open(original_path) as img:
+            # Versión de visualización (grande, para fondos)
+            img_display = img.copy()
+            img_display.thumbnail((1920, 1080))
+            img_display.save(display_path, optimize=True, quality=85)
+
+            # Versión de miniatura (pequeña, para listas)
+            img_thumbnail = img.copy()
+            img_thumbnail.thumbnail((400, 400))
+            img_thumbnail.save(thumbnail_path, optimize=True, quality=80)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al procesar las imágenes: {e}")
+
+    # 5. Creación del registro en la base de datos
     nuevo_articulo = Articulo(
-        **articulo_data.model_dump(),
-        autor_dni=admin_user.numero_de_dni
+        titulo=titulo,
+        slug=slugify(titulo),
+        resumen=resumen,
+        contenido_html=contenido_html,
+        categoria_id=categoria_id,
+        imagen_display_url=file_name,
+        imagen_thumbnail_url=file_name,
+        autor_dni=current_user.numero_de_dni,
+        vistas=0
     )
     db.add(nuevo_articulo)
     db.commit()
@@ -165,7 +257,7 @@ async def create_articulo(
 @admin_router.put("/publicaciones/{articulo_id}", response_model=ArticuloSchema)
 async def update_articulo(
     articulo_id: int, 
-    articulo_data: ArticuloUpdateSchema, 
+    articulo_data: ArticuloSchema,
     db: Session = Depends(get_db)
 ):
     """(Admin) Actualiza una publicación existente."""

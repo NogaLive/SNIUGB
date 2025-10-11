@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.routing import APIRoute
 from sqlalchemy.orm import Session
 from sqlalchemy import extract, func, and_
 from typing import List
@@ -10,10 +11,14 @@ from src.models.database_models import (
     Animal, InventarioItem, Predio
 )
 from src.models.calendario_models import (
-    RecordatorioCreateSchema, EventoResponseSchema, RecordatorioUpdateSchema
+    RecordatorioCreateSchema, EventoResponseSchema
 )
 
-calendario_router = APIRouter(prefix="/calendario", tags=["Calendario y Recordatorios"])
+calendario_router = APIRouter(
+    prefix="/calendario",
+    tags=["Calendario y Recordatorios"],
+    route_class=APIRoute
+)
 
 def calcular_estado_color(evento: Evento, hoy: date) -> str:
     """Calcula el color del estado basado en las reglas de negocio."""

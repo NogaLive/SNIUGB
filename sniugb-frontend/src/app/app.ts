@@ -14,9 +14,10 @@ import { FooterComponent } from './components/footer/footer';
     HeaderComponent,
     FooterComponent
   ],
+  
   template: `
     <app-header></app-header>
-    <main>
+    <main class="main-container">
       <router-outlet></router-outlet>
     </main>
     <app-footer></app-footer>

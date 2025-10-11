@@ -1,27 +1,39 @@
+/* --- Estructura y Alineación --- */
+
 .public-header {
   background-color: #fff;
-  border-bottom: 1px solid var(--color-border);
   padding: 0 1.5rem;
   position: sticky;
   top: 0;
   z-index: 100;
+  border-bottom: 1px solid #dee2e6;
 }
 
 .header-content {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  height: 70px;
-  max-width: 1200px;
+  height: 80px;
+  max-width: 1820px;
   margin: 0 auto;
 }
 
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 3rem;
+}
+
 .logo {
-  font-weight: 700;
-  font-size: 1.6rem;
-  color: var(--color-brand-red);
   text-decoration: none;
 }
+
+.logo img {
+  height: 40px; 
+  display: block;
+}
+
+/* --- Barra de Navegación --- */
 
 .main-nav {
   display: flex;
@@ -31,6 +43,7 @@
 .main-nav a {
   text-decoration: none;
   color: var(--color-text-dark);
+  font-size: 1.7rem;
   font-weight: 500;
   padding: 0.5rem 0;
   border-bottom: 3px solid transparent;
@@ -38,15 +51,59 @@
 }
 
 .main-nav a:hover {
-  color: var(--color-brand-red);
+  color: #bf0909;
 }
 
 .main-nav a.active {
-  color: var(--color-brand-red);
-  border-bottom-color: var(--color-brand-red);
+  color: #bf0909;
+  border-bottom-color: #bf0909;
+  font-weight: 550;
 }
+
+/* --- Botones de Autenticación --- */
 
 .auth-buttons {
   display: flex;
-  gap: 0.75rem;
+  gap: 1.5rem;
+}
+
+.auth-buttons a {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 1.8rem;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  width: 120px;
+  height: 40px;
+}
+
+/* Estilo para el botón principal (Registrarse) */
+
+.auth-buttons a.primary {
+  background-color: #0056ac;
+  color: #fff;
+}
+
+.auth-buttons a.primary:hover {
+  background-color: #fff;
+  color: #0056ac;
+  border-color: #0056ac;
+}
+
+/* Estilo para el botón secundario (Ingresar) */
+
+.auth-buttons a.secondary {
+  background-color: #fff;
+  color: #0056ac;
+  border: 2px solid #0056ac;
+}
+
+.auth-buttons a.secondary:hover {
+  background-color: #f8f9fa;
+  border-color: #adb5bd;
 }

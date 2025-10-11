@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.routing import APIRoute
 from sqlalchemy.orm import Session
 from typing import List
 import os
@@ -6,10 +7,13 @@ import os
 from src.utils.security import get_current_user, get_db
 from src.models.database_models import Usuario, ContenidoAyuda, SolicitudSoporte, UserRole
 from src.models.soporte_models import ContenidoAyudaResponseSchema, SolicitudSoporteCreateSchema
-# Importamos la nueva función de notificación
 from src.services.notification_service import send_new_support_ticket_notification
 
-soporte_router = APIRouter(prefix="/soporte", tags=["Ayuda y Soporte"])
+soporte_router = APIRouter(
+    prefix="/soporte",
+    tags=["Ayuda y Soporte"],
+    route_class=APIRoute
+)
 
 @soporte_router.get("/contenido", response_model=List[ContenidoAyudaResponseSchema])
 async def get_contenido_ayuda(db: Session = Depends(get_db)):
@@ -17,7 +21,6 @@ async def get_contenido_ayuda(db: Session = Depends(get_db)):
     Obtiene todo el contenido de ayuda (FAQs y Videos). Es un endpoint público.
     """
     return db.query(ContenidoAyuda).order_by(ContenidoAyuda.orden).all()
-
 
 @soporte_router.post("/solicitudes", status_code=status.HTTP_201_CREATED)
 async def create_solicitud_soporte(

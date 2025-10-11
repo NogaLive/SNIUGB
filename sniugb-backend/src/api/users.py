@@ -1,11 +1,16 @@
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.routing import APIRoute
 from sqlalchemy.orm import Session
 
 from src.utils.security import get_current_user, get_db, verify_password, get_password_hash
 from src.models.database_models import Usuario
 from src.models.user_models import UserResponseSchema, UserUpdateProfileSchema, UserUpdatePasswordSchema
 
-users_router = APIRouter(prefix="/users", tags=["Usuarios"])
+users_router = APIRouter(
+    prefix="/users",
+    tags=["Usuarios"],
+    route_class=APIRoute
+)
 
 @users_router.get("/me", response_model=UserResponseSchema)
 async def read_users_me(current_user: Usuario = Depends(get_current_user)):

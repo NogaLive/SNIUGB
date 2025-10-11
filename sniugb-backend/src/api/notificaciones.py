@@ -1,15 +1,17 @@
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.routing import APIRoute
 from sqlalchemy.orm import Session
 from typing import List
-from pydantic import BaseModel
-from datetime import datetime
 
 from src.utils.security import get_current_user, get_db
 from src.models.database_models import Usuario, Notificacion, Transferencia
 from src.models.notificacion_models import NotificacionResponseSchema, NotificacionDetailResponseSchema
 
-notificaciones_router = APIRouter(prefix="/notificaciones", tags=["Notificaciones"])
-
+notificaciones_router = APIRouter(
+    prefix="/notificaciones",
+    tags=["Notificaciones"],
+    route_class=APIRoute
+)
 
 @notificaciones_router.get("/", response_model=List[NotificacionResponseSchema])
 async def get_mis_notificaciones(
@@ -26,7 +28,6 @@ async def get_mis_notificaciones(
     
     return notificaciones
 
-
 @notificaciones_router.get("/contador-no-leidas")
 async def get_contador_notificaciones_no_leidas(
     db: Session = Depends(get_db),
@@ -42,7 +43,6 @@ async def get_contador_notificaciones_no_leidas(
     ).count()
     
     return {"no_leidas": count}
-
 
 @notificaciones_router.get("/{notificacion_id}", response_model=NotificacionDetailResponseSchema)
 async def get_notificacion_detail(

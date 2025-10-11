@@ -188,14 +188,18 @@ class Articulo(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     titulo = Column(String, nullable=False)
+    slug = Column(String, unique=True, index=True, nullable=False)
     resumen = Column(Text)
     contenido_html = Column(Text)
-    imagen_principal = Column(String)
+    imagen_thumbnail_url = Column(String)
+    imagen_display_url = Column(String)
+    vistas = Column(Integer, default=0)
     categoria_id = Column(Integer, ForeignKey("categorias.id"))
     categoria = relationship("Categoria")
     estado_publicacion = Column(String, default="publicado")
     fecha_publicacion = Column(DateTime(timezone=True), server_default=func.now())
     autor_dni = Column(String, ForeignKey("datos_del_usuario.numero_de_dni"))
+    autor = relationship("Usuario")
 
 class TipoContenidoAyuda(enum.Enum):
     FAQ = "FAQ"
