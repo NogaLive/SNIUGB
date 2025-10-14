@@ -1,0 +1,7 @@
+<div class="modal-backdrop"
+    (mousedown)="onBackdropMouseDown($event)" 
+    (mouseup)="onBackdropMouseUp($event)">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <ng-content></ng-content>
+  </div>
+</div>

@@ -1,99 +1,64 @@
 :host {
-  display: block;
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
   background-color: #fff;
-  padding: 3rem 0; /* Espaciado superior e inferior para la página */
+  padding: 3rem 0;
 }
 
 .publications-container {
-  max-width: 120rem;
-  margin: 0 auto;
-  padding: 0 2rem;
-}
-
-/* --- ESTILOS CORREGIDOS PARA EL FILTRO DE TEXTO --- */
-.filter-bar {
   display: flex;
-  justify-content: center;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 4rem; /* Espacio generoso entre categorías */
-  margin-bottom: 6rem;
+  flex-direction: column;
+  flex-grow: 1;
+  padding: 0 4rem; 
 }
 
-.filter-item {
-  position: relative; /* Necesario para posicionar el separador */
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 0.5rem;
-}
+/* --- Estilos del Filtro (Sin cambios) --- */
+.filter-bar { display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: 4rem; margin-bottom: 4rem; }
+.filter-item { position: relative; background: none; border: none; cursor: pointer; padding: 0.5rem; }
+.filter-item span { display: block; position: relative; font-family: 'Lexend', sans-serif; font-size: 1.4rem; font-weight: 300; text-transform: uppercase; color: #26292E; transition: transform 0.2s ease, color 0.2s ease, font-weight 0.2s ease; }
+.filter-item span::before { content: attr(data-text); display: block; font-weight: 600; visibility: hidden; height: 0; }
+.filter-item:hover span { color: #BF0909; transform: scale(1.1); }
+.filter-item.active span { color: #BF0909; font-weight: 600; }
+.filter-item::after { content: ''; position: absolute; right: -2rem; top: 50%; transform: translateY(-50%); width: 2px; height: 30px; background-color: #26292E; }
+.filter-bar .filter-item:last-child::after { display: none; }
 
-/* El span es ahora el contenedor del texto visible y su placeholder */
-.filter-item span {
-  display: block; /* O inline-block */
-  position: relative; /* Contexto para el ::before */
+/* --- ESTILOS CORREGIDOS PARA LA PARRILLA DE ARTÍCULOS --- */
 
-  /* Estilos de tipografía base (estado inactivo) */
-  font-family: 'Lexend', sans-serif;
-  font-size: 1.5rem;
-  font-weight: 300; /* 'Light' */
-  text-transform: uppercase;
-  color: #26292E;
-  transition: transform 0.2s ease, color 0.2s ease, font-weight 0.2s ease;
-}
-
-/* SOLUCIÓN: El pseudo-elemento ::before actúa como el placeholder invisible */
-.filter-item span::before {
-  content: attr(data-text); /* Lee el texto desde el atributo data-text */
-  display: block;
-  font-weight: 600; /* Siempre está en 'SemiBold' para reservar el espacio */
-  visibility: hidden; /* Lo hace invisible pero sigue ocupando espacio */
-  height: 0; /* Evita que el placeholder añada altura extra */
-}
-
-/* Al hacer hover, solo cambia el color del span visible */
-.filter-item:hover span {
-  color: #BF0909;
-  transform: scale(1.1);
-}
-
-/* Al estar activo, cambia el color y el grosor del span visible */
-.filter-item.active span {
-  color: #BF0909;
-  font-weight: 600; /* 'SemiBold' */
-}
-
-/* La línea separadora se mantiene igual */
-.filter-item::after {
-  content: '';
-  position: absolute;
-  right: -2rem;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 2px;
-  height: 30px;
-  background-color: #26292E;
-}
-
-.filter-bar .filter-item:last-child::after {
-  display: none;
-}
-
-/* --- Estilos para la Parrilla (Grid) de Artículos --- */
 .articles-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 5rem 4rem;
+  gap: 5.72rem 4rem;
+  flex-grow: 1; 
 }
 
 .article-entry {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  gap: 2.5rem;
+  text-decoration: none;
+  color: inherit;
+  position: relative; 
+}
+
+.article-entry::after {
+  content: '';
+  position: absolute;
+  bottom: -2.86rem;
+  left: 0;
+  width: 100%;
+  height: 1px;
+  background-color: #dee2e6;
+}
+
+.articles-grid .article-entry:nth-last-child(-n + 2)::after {
+  display: none;
 }
 
 .article-image {
-  width: 100%;
-  aspect-ratio: 350 / 200;
+  width: 350px;
+  height: 200px;
+  flex-shrink: 0;
   overflow: hidden;
   border-radius: 8px;
 }
@@ -102,7 +67,7 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: transform 0.3s ease;
+  transition: transform 0.5s ease;
 }
 
 .article-entry:hover .article-image img {
@@ -110,10 +75,10 @@
 }
 
 .article-content {
-  padding-top: 1.5rem;
   display: flex;
   flex-direction: column;
   flex-grow: 1;
+  height: 200px; 
 }
 
 .article-content a {
@@ -122,38 +87,71 @@
 }
 
 .article-content .category-tag {
-  font-size: 1.4rem;
-  font-weight: 700;
+  font-family: 'Lexend', sans-serif;
+  font-size: 1.6rem;
+  font-weight: 500; /* Medium */
   color: #BF0909;
-  margin-bottom: 1rem;
+  /* CORRECCIÓN: Se reduce el espaciado. */
+  margin-bottom: 0.5rem; 
   text-decoration: none;
+  align-self: flex-start;
 }
+
 .article-content .category-tag:hover {
   text-decoration: underline;
 }
 
-.article-content h2 {
-  font-size: 2.4rem;
-  margin: 0 0 1rem 0;
-  line-height: 1.3;
+.main-content-link {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  text-decoration: none;
+  color: inherit;
+  overflow: hidden;
 }
 
-.article-content p {
-  font-size: 1.6rem;
+.main-content-link h2 {
+  font-family: 'Lexend', sans-serif;
+  font-size: 2.0rem;
+  font-weight: 400; /* Regular */
+  /* CORRECCIÓN: Se reduce el espaciado. */
+  margin: 0 0 0.8rem 0; 
+  line-height: 1.4;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2; /* Límite de 2 líneas para el título */
+}
+
+.main-content-link p {
+  /* CORRECCIÓN: Tipografía del resumen según lo solicitado. */
+  font-family: 'Lexend', sans-serif;
+  font-size: 1.4rem;  /* 14px */
+  font-weight: 400;  /* Regular */
+  line-height: 1.8rem; /* 18px */
   color: #6C757D;
-  line-height: 1.6;
-  flex-grow: 1;
+
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  /* CORRECCIÓN CLAVE: Se reduce el límite de líneas a 3.
+     Esto garantiza que el texto NUNCA se desbordará, incluso con un título de 2 líneas. */
+  -webkit-line-clamp: 3; 
 }
 
 .article-meta {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-top: 2rem;
+  /* CORRECCIÓN: Se usa 'margin-top: auto' para anclarlo al fondo. */
+  margin-top: auto; 
+  padding-top: 1rem;
 }
 
 .author-tag, .views-counter {
-  font-size: 1.5rem;
+  font-family: 'Lexend', sans-serif;
+  font-size: 1.4rem; /* 14px */
+  font-weight: 400; /* Regular */
   color: #6C757D;
 }
 
@@ -168,45 +166,90 @@
   height: 2rem;
 }
 
-/* --- Estilos para la Paginación --- */
+/* --- ESTILOS DE PAGINACIÓN (Minimalista con Iconos SVG) --- */
 .pagination-controls {
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 1rem;
-  margin-top: 8rem;
+  gap: 2rem;
+  margin-top: 3.5rem;
 }
 
 .pagination-controls button {
-  padding: 1rem 1.5rem;
-  border: 1px solid #DEE2E6;
-  background-color: #fff;
-  border-radius: 8px;
+  position: relative;
+  background: none;
+  border: none;
+  color: #6C757D; /* Color base para el texto y los iconos */
   cursor: pointer;
-  font-size: 1.6rem;
+  font-family: 'Lexend', sans-serif;
+  font-size: 1.8rem;
   font-weight: 500;
-  transition: all 0.2s ease;
+  padding: 0.5rem;
+  transition: color 0.2s ease;
+  
+  /* Se añade flex para centrar el SVG dentro del botón */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* NUEVO: Regla para controlar el tamaño de los iconos SVG */
+.pagination-controls button svg {
+  width: 2rem; /* 20px */
+  height: 2rem; /* 20px */
 }
 
 .pagination-controls button:hover:not(:disabled) {
-  border-color: #BF0909;
-  color: #BF0909;
+  color: #BF0909; /* Al pasar el mouse, el SVG y el texto cambiarán a este color */
 }
 
 .pagination-controls button:disabled {
-  opacity: 0.5;
+  color: #DEE2E6;
   cursor: not-allowed;
 }
 
 .pagination-controls .page-number.active {
+  color: #BF0909;
+  font-weight: 700;
+}
+
+/* La línea animada debajo del número activo (se mantiene igual) */
+.pagination-controls .page-number.active::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 0;
+  width: 100%;
+  height: 2px;
   background-color: #BF0909;
-  color: #fff;
-  border-color: #BF0909;
 }
 
 /* --- Diseño Adaptable para Móviles --- */
 @media (max-width: 992px) {
   .articles-grid {
     grid-template-columns: 1fr;
+    gap: 0;
+  }
+
+  .article-entry {
+    flex-direction: column;
+    padding-bottom: 3rem;
+  }
+
+  .article-entry::after {
+    bottom: 0;
+  }
+
+  .articles-grid .article-entry:last-child::after {
+    display: none;
+  }
+  
+  .article-content {
+    height: auto;
+  }
+  
+  .article-image {
+    width: 100%;
+    height: 250px;
   }
 }

@@ -1,1 +1,47 @@
-<p>login works!</p>
+<form (ngSubmit)="ingresar()">
+  
+  <h3>Ingrese sus datos:</h3>
+  
+  <div class="form-content">
+    <div class="form-group-container">
+      <div class="form-group">
+        <input 
+          type="tel" 
+          id="login-dni" 
+          [(ngModel)]="dni" 
+          name="dni" 
+          [placeholder]="dniPlaceholder" 
+          [ngClass]="{'input-error': dniError}"
+          (input)="resetErrors()"
+          required 
+          maxlength="8" 
+          pattern="[0-9]*">
+      </div>
+      
+      <div class="form-group password-wrapper">
+        <input 
+          [type]="showPassword ? 'text' : 'password'" 
+          id="login-contrasena" 
+          [(ngModel)]="contrasena" 
+          name="contrasena" 
+          [placeholder]="contrasenaPlaceholder"
+          [ngClass]="{'input-error': contrasenaError}"
+          (input)="resetErrors()"
+          required>
+        
+        <button
+          *ngIf="contrasena"
+          type="button"
+          (click)="togglePasswordVisibility()"
+          class="toggle-password-btn"
+          aria-label="Mostrar u ocultar contraseña">
+          <img src="assets/login/eye-icon.svg" alt="Icono de ojo">  
+        </button>
+      </div>
+    </div>
+    <a href="#" class="forgot-password">¿Olvidaste tu contraseña?</a>
+  </div>
+
+  <button type="submit" class="submit-button">Ingresar</button>
+
+</form>

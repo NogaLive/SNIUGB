@@ -6,7 +6,7 @@
   position: sticky;
   top: 0;
   z-index: 100;
-  border-bottom: 1px solid #dee2e6;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
 }
 
 .header-content {
@@ -42,7 +42,7 @@
 
 .main-nav a {
   text-decoration: none;
-  color: var(--color-text-dark);
+  color: #26292E;
   font-size: 1.7rem;
   font-weight: 500;
   padding: 0.5rem 0;
@@ -60,7 +60,14 @@
   font-weight: 550;
 }
 
-/* --- Botones de Autenticación --- */
+/* --- Botones de Autenticación y Perfil --- */
+
+.auth-controls {
+  display: flex;
+  align-items: center;
+}
+
+/* --- CÓDIGO RESTAURADO --- */
 
 .auth-buttons {
   display: flex;
@@ -82,8 +89,6 @@
   height: 40px;
 }
 
-/* Estilo para el botón principal (Registrarse) */
-
 .auth-buttons a.primary {
   background-color: #0056ac;
   color: #fff;
@@ -95,8 +100,6 @@
   border-color: #0056ac;
 }
 
-/* Estilo para el botón secundario (Ingresar) */
-
 .auth-buttons a.secondary {
   background-color: #fff;
   color: #0056ac;
@@ -106,4 +109,133 @@
 .auth-buttons a.secondary:hover {
   background-color: #f8f9fa;
   border-color: #adb5bd;
+}
+
+/* --- FIN DEL CÓDIGO RESTAURADO --- */
+
+
+/* --- ESTILOS PARA EL MENÚ DE PERFIL --- */
+
+.profile-menu {
+  position: relative;
+}
+
+.profile-icon-btn {
+  background-color: #f1f3f5;
+  border: 1px solid #dee2e6;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  padding: 0;
+  transition: background-color 0.2s ease;
+}
+
+.profile-icon-btn:hover {
+  background-color: #e9ecef;
+}
+
+.profile-icon-btn svg {
+  width: 24px;
+  height: 24px;
+  color: #495057;
+}
+
+/* --- ESTILOS CORREGIDOS PARA EL MENÚ DESPLEGABLE --- */
+
+.dropdown-menu {
+  position: fixed;
+  top: 80px; 
+  right: 0;
+  width: 350px;
+  height: calc(100vh - 80px);
+  background-color: #fff;
+  box-shadow: -5px 0 15px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  padding: 3rem;
+  box-sizing: border-box;
+  z-index: 99; 
+}
+
+.dropdown-header h2 {
+  font-family: 'Inria Sans', sans-serif;
+  font-weight: 700;
+  font-size: 3rem;
+  color: #26292E;
+  margin: 0 0 0 0;
+  text-align: center;
+}
+
+.dropdown-options {
+  display: flex;
+  flex-direction: column;
+  gap: 3rem;
+  flex-grow: 1;
+  justify-content: center;
+}
+
+.dropdown-btn {
+  font-family: 'Lexend', sans-serif;
+  font-weight: 500;
+  font-size: 2rem;
+  color: #0056AC;
+  text-align: center;
+  background: none;
+  border: none;
+  padding: 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  position: relative;
+}
+
+.dropdown-btn:hover {
+  background-color: #f1f3f5;
+}
+
+.dropdown-btn:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  bottom: -1.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 70%;
+  height: 2px;
+  background-color: #0056AC;
+}
+
+.logout-btn {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  width: 250px;
+  height: 60px;
+  background-color: transparent;
+  border: 2px solid #BF0909;
+  border-radius: 8px;
+  cursor: pointer;
+  align-self: center;
+  transition: all 0.2s ease;
+  font-family: 'Lexend', sans-serif;
+  font-weight: 500;
+  font-size: 2.4rem;
+  color: #BF0909;
+}
+
+.logout-btn svg {
+  width: 24px;
+  height: 24px;
+  fill: currentColor;
+  transition: fill 0.2s ease;
+}
+
+.logout-btn:hover {
+  background-color: #BF0909;
+  color: #FFFFFF;
 }

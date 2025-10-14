@@ -1,0 +1,35 @@
+.modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.6);
+  display: flex;
+  justify-content: center;
+  /* CORRECCIÓN: Le decimos que centre la caja del modal verticalmente, en lugar de estirarla. */
+  align-items: center; 
+  z-index: 1000;
+}
+
+.modal-content {
+  background-color: white;
+  padding: 0;
+  border-radius: 8px;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+  box-sizing: border-box;
+  /* El display: flex aquí es opcional, pero no daña. La clave está en el :host del componente hijo. */
+  display: flex; 
+}
+
+/* Estilo para el modal de Login */
+.modal-content.login-modal {
+  width: 375px;
+  height: 330px;
+}
+
+/* Estilo para el modal de Registro con las dimensiones exactas */
+.modal-content.register-modal {
+  width: 450px;
+  height: 400px;
+}

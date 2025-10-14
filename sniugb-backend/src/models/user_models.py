@@ -1,22 +1,34 @@
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, ConfigDict
 from datetime import datetime
 
+# CORRECCIÓN: Se añaden reglas de validación y se ajustan los nombres de campo
 class UserCreateSchema(BaseModel):
-    dni: str
-    email: EmailStr
-    telefono: str
+    # Se usa el nombre de campo que espera la base de datos: 'numero_de_dni'
+    numero_de_dni: str = Field(
+        ..., 
+        min_length=8, 
+        max_length=8, 
+        pattern=r'^[0-9]+$',
+        description="El DNI debe tener 8 dígitos numéricos."
+    )
+    telefono: str = Field(
+        ..., 
+        min_length=9, 
+        max_length=9, 
+        pattern=r'^[0-9]+$',
+        description="El teléfono debe tener 9 dígitos numéricos."
+    )
+    email: EmailStr # Pydantic valida automáticamente el formato del email
     password: str
 
 class UserResponseSchema(BaseModel):
-    dni: str = Field(alias='numero_de_dni')
-    nombre: str = Field(alias='nombre_completo')
+    numero_de_dni: str # Se elimina el alias, ya que el modelo de BD usa este nombre
+    nombre_completo: str
     email: EmailStr
     estado: str
     fecha_de_registro: datetime
 
-    class Config:
-        from_attributes = True
-        populate_by_name = True
+    model_config = ConfigDict(from_attributes=True)
 
 class UserUpdateProfileSchema(BaseModel):
     email: EmailStr | None = None
@@ -27,10 +39,12 @@ class UserUpdatePasswordSchema(BaseModel):
     new_password: str
 
 class ForgotPasswordSchema(BaseModel):
-    dni: str
+    # Se cambia 'dni' por 'numero_de_dni' para consistencia
+    numero_de_dni: str
     method: str
 
 class ResetPasswordSchema(BaseModel):
-    dni: str
+    # Se cambia 'dni' por 'numero_de_dni' para consistencia
+    numero_de_dni: str
     code: str
     new_password: str

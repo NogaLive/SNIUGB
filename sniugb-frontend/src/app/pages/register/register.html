@@ -1,1 +1,58 @@
-<p>register works!</p>
+<form (ngSubmit)="registrarse()">
+  
+  <h3>Ingrese sus datos personales:</h3>
+
+  <div *ngIf="mensaje" [ngClass]="{ 'error-message': esError, 'success-message': !esError }">
+    {{ mensaje }}
+  </div>
+
+  <div class="form-grid">
+    <div class="form-inputs">
+      <div class="form-group">
+        <input type="tel" id="reg-dni" [(ngModel)]="dni" name="dni" placeholder="DNI" required maxlength="8" pattern="[0-9]*">
+      </div>
+      <div class="form-group">
+        <input type="tel" id="reg-telefono" [(ngModel)]="telefono" name="telefono" placeholder="Teléfono" required maxlength="9" pattern="[0-9]*">
+      </div>
+      <div class="form-group">
+        <input type="email" id="reg-correo" [(ngModel)]="correo" name="correo" placeholder="Correo electrónico" required>
+      </div>
+      
+      <div class="form-group password-wrapper">
+        <input 
+          [type]="showPassword ? 'text' : 'password'" 
+          id="reg-contrasena" 
+          [(ngModel)]="contrasena" 
+          (input)="validatePasswordRealtime()"
+          name="contrasena" 
+          placeholder="Contraseña" 
+          required>
+        
+        <button
+          *ngIf="contrasena"
+          type="button"
+          (click)="togglePasswordVisibility()" 
+          class="toggle-password-btn" 
+          aria-label="Mostrar u ocultar contraseña">
+          <img src="assets/registro/eye-icon.svg" alt="Icono de ojo">
+        </button>
+      </div>
+
+    </div>
+
+    <div class="password-requirements">
+      <p class="req-title">La contraseña debe cumplir con:</p>
+      <ul>
+        <li [ngClass]="{'valid': passwordValidation.length}" [attr.data-text]="'8-16 caracteres'">8-16 caracteres</li>
+        <li [ngClass]="{'valid': passwordValidation.hasSymbols}" [attr.data-text]="'1 símbolo'">1 símbolo</li>
+        <li [ngClass]="{'valid': passwordValidation.hasNumber}" [attr.data-text]="'1 número'">1 número</li>
+        <li [ngClass]="{'valid': passwordValidation.hasUpper}" [attr.data-text]="'1 mayúscula'">1 mayúscula</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="submit-area">
+    <button type="submit" class="submit-button" [disabled]="isFormInvalid">Registrarse</button>
+  </div>
+
+</form>

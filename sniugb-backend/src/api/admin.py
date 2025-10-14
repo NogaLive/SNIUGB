@@ -14,6 +14,7 @@ import io
 import os
 import aiofiles
 from slugify import slugify
+from src.utils.slug import generate_unique_slug 
 
 # Imports de la aplicación
 from src.utils.security import get_current_admin_user, get_db, get_current_user
@@ -197,6 +198,8 @@ async def create_articulo(
     imagen_principal: UploadFile = File(...)
 ):
     """(Admin) Crea una nueva publicación con subida y procesamiento de imagen en 3 versiones."""
+
+    unique_slug = generate_unique_slug(db, titulo)
     
     # 1. Validación y generación de nombre de archivo
     extension = imagen_principal.filename.split(".")[-1].lower()
@@ -240,7 +243,7 @@ async def create_articulo(
     # 5. Creación del registro en la base de datos
     nuevo_articulo = Articulo(
         titulo=titulo,
-        slug=slugify(titulo),
+        slug=unique_slug,
         resumen=resumen,
         contenido_html=contenido_html,
         categoria_id=categoria_id,

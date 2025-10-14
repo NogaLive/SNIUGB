@@ -12,7 +12,7 @@ from src.services.auth_service import create_new_user
 from src.services.notification_service import send_reset_code_by_email, send_reset_code_by_whatsapp
 
 # Importaciones de seguridad
-from src.utils.security import verify_password, create_access_token, get_db, get_password_hash
+from src.utils.security import verify_password, create_access_token, get_db, get_password_hash, validate_password
 
 auth_router = APIRouter(
     prefix="/auth",
@@ -22,9 +22,18 @@ auth_router = APIRouter(
 
 @auth_router.post("/register", response_model=UserResponseSchema, status_code=status.HTTP_201_CREATED)
 async def register_user(user_data: UserCreateSchema, db: Session = Depends(get_db)):
+
+    if not validate_password(user_data.password):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="La contraseña no cumple con los requisitos de seguridad."
+        )
+    
     new_user = create_new_user(user_data, db)
     if new_user == "dni_not_found":
         raise HTTPException(status_code=404, detail="El DNI ingresado no es válido o no fue encontrado.")
+    if new_user == "duplicate_phone":
+        raise HTTPException(status_code=400, detail="El número de teléfono ya está registrado.")
     if new_user == "duplicate_entry":
         raise HTTPException(status_code=400, detail="El DNI o el correo electrónico ya están registrados.")
     if not new_user:

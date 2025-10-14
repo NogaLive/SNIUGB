@@ -1,0 +1,150 @@
+/* CORRECCIÓN: Se añade :host para que el componente ocupe el 100% del modal */
+:host {
+  width: 100%;
+  height: 100%;
+}
+
+/* CORRECCIÓN: El formulario controla la distribución vertical */
+form {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between; /* Título arriba, botón abajo, contenido en medio */
+  align-items: center;
+  width: 100%;
+  height: 100%;
+  padding: 4rem 7rem;
+  box-sizing: border-box;
+}
+
+h3 {
+  font-family: 'Lexend', sans-serif;
+  font-weight: 500;
+  font-size: 2.2rem;
+  color: #26292E;
+  text-align: center;
+  margin: 0;
+}
+
+/* Contenedor que agrupa los inputs y el enlace "olvidé contraseña" */
+.form-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.form-group-container {
+  display: flex;
+  flex-direction: column;
+  gap: 2.5rem; /* Espacio entre los campos DNI y Contraseña */
+  padding: 2.5rem;
+}
+
+/* El 'password-wrapper' se añade para el ícono del ojo */
+.form-group.password-wrapper {
+  position: relative;
+}
+
+.form-group input {
+  width: 225px;
+  height: 40px;
+  border: 1px solid #ced4da;
+  border-radius: 6px;
+  padding: 0 1.5rem;
+  font-family: 'Lexend', sans-serif;
+  font-size: 1.6rem;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  box-sizing: border-box;
+}
+
+/* Se añade padding a la derecha del input de contraseña */
+.password-wrapper input {
+  padding-right: 4.5rem;
+}
+
+.form-group input::placeholder {
+  font-family: 'Lexend', sans-serif;
+  font-weight: 500;
+  font-size: 2.0rem;
+  color: #72767A;
+  opacity: 1;
+}
+
+.form-group input:focus {
+  outline: none;
+  border-color: #0056AC;
+  box-shadow: 0 0 0 3px rgba(0, 86, 172, 0.2);
+}
+
+.forgot-password {
+  font-family: 'Lexend', sans-serif;
+  font-weight: 500;
+  font-size: 1.5rem;
+  color: #0056AC;
+  text-decoration: none;
+  transition: text-decoration 0.2s ease;
+  padding-bottom: 2.5rem;
+}
+
+.forgot-password:hover {
+  text-decoration: underline;
+}
+
+.submit-button {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  width: 15.0rem;
+  height: 4.0rem;
+  border: none;
+  border-radius: 8px;
+  background-color: #0056AC;
+  color: #fff;
+  cursor: pointer;
+  font-family: 'Lexend', sans-serif;
+  font-weight: 500;
+  font-size: 2.2rem;
+  transition: background-color 0.2s ease;
+}
+
+.submit-button:hover {
+  background-color: #004386;
+}
+
+/* --- ESTILOS PARA EL ÍCONO DE MOSTRAR/OCULTAR CONTRASEÑA --- */
+.toggle-password-btn {
+  position: absolute;
+  top: 50%;
+  right: 1rem;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+}
+
+.toggle-password-btn img {
+  width: 2.2rem;
+  height: 2.2rem;
+  opacity: 0.6;
+  transition: opacity 0.2s ease;
+}
+
+.toggle-password-btn:hover img {
+  opacity: 1;
+}
+
+/* --- AÑADIR ESTOS ESTILOS PARA ERRORES EN EL INPUT --- */
+
+/* Aplica un borde rojo al input cuando tiene la clase .input-error */
+.form-group input.input-error {
+  border-color: #BF0909; /* Usa el color rojo de la marca */
+}
+
+/* Cambia el color del texto del placeholder cuando el input tiene la clase .input-error */
+.form-group input.input-error::placeholder {
+  color: #BF0909;
+  /* Opcional: hacemos el texto del error un poco más pequeño para que quepa mejor */
+  font-size: 1.6rem; 
+}

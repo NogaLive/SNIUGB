@@ -2,7 +2,7 @@ import { Categoria } from './categoria.model';
 
 export interface Autor {
   id: number;
-  nombre: string;
+  nombre_completo: string;
 }
 
 export interface Articulo {

@@ -26,25 +26,31 @@
         <a [routerLink]="[]" [queryParams]="{categoria: articulo.categoria.id}" (click)="seleccionarCategoria(articulo.categoria.id)" class="category-tag">
           {{ articulo.categoria.nombre }}
         </a>
-        <a [routerLink]="['/articulo', articulo.slug]">
+        
+        <a [routerLink]="['/articulo', articulo.slug]" class="main-content-link">
           <h2>{{ articulo.titulo }}</h2>
-          <p>{{ articulo.resumen }}</p>
-        </a>
-        <div class="article-meta">
-          <a [routerLink]="[]" [queryParams]="{autor: articulo.autor.id}" class="author-tag">
-            Por: {{ articulo.autor.nombre }}
-          </a>
-          <div class="views-counter">
-            <img src="assets/publicaciones/vistas-logo.svg" alt="Icono de vistas">
-            <span>{{ articulo.vistas }}</span>
+          <p>{{ articulo.resumen | truncate:160 }}</p>
+          
+          <div class="article-meta">
+            <span class="author-tag"> Por: {{ articulo.autor.nombre_completo }}
+            </span>
+            <div class="views-counter">
+              <img src="assets/publicaciones/vistas-logo.svg" alt="Icono de vistas">
+              <span>{{ articulo.vistas }}</span>
+            </div>
           </div>
-        </div>
+        </a>
+        
       </div>
     </div>
   </div>
 
   <div class="pagination-controls" *ngIf="totalPages > 1">
-    <button (click)="irAPagina(currentPage - 1)" [disabled]="currentPage === 1">Anterior</button>
+    <button (click)="irAPagina(currentPage - 1)" [disabled]="currentPage === 1" aria-label="Página anterior">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+      </svg>
+    </button>
     <button
       *ngFor="let pagina of pages"
       class="page-number"
@@ -52,6 +58,10 @@
       (click)="irAPagina(pagina)">
       {{ pagina }}
     </button>
-    <button (click)="irAPagina(currentPage + 1)" [disabled]="currentPage === totalPages">Siguiente</button>
+    <button (click)="irAPagina(currentPage + 1)" [disabled]="currentPage === totalPages" aria-label="Página siguiente">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+      </svg>
+    </button>
   </div>
 </div>

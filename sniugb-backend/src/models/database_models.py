@@ -65,7 +65,7 @@ class Usuario(Base):
     numero_de_dni = Column(String, primary_key=True, index=True)
     nombre_completo = Column(String, index=True, nullable=True)
     email = Column(String, unique=True, index=True, nullable=False)
-    telefono = Column(String, nullable=False)
+    telefono = Column(String, unique=True, nullable=False)
     password = Column(String, nullable=False)
     estado = Column(String, default="activo")
     rol = Column(SQLAlchemyEnum(UserRole, name='user_role_enum'), default=UserRole.GANADERO, nullable=False)

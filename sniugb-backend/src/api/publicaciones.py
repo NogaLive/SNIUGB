@@ -8,8 +8,7 @@ from src.models import database_models as models
 from src.models.admin_models import ArticulosResponse, ArticuloSchema 
 
 publicaciones_router = APIRouter(
-    # CORRECCIÓN: Añadimos el prefijo /api para consistencia
-    prefix="/api/publicaciones",
+    prefix="/publicaciones",
     tags=["Publicaciones Públicas"],
 )
 

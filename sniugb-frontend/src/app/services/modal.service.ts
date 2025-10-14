@@ -1,0 +1,34 @@
+import { Injectable } from '@angular/core';
+import { BehaviorSubject } from 'rxjs';
+
+@Injectable({
+  providedIn: 'root'
+})
+export class ModalService {
+  // BehaviorSubjects para mantener el estado de visibilidad de cada modal
+  private isLoginOpen = new BehaviorSubject<boolean>(false);
+  private isRegisterOpen = new BehaviorSubject<boolean>(false);
+
+  // Observables públicos para que los componentes se suscriban a los cambios
+  isLoginOpen$ = this.isLoginOpen.asObservable();
+  isRegisterOpen$ = this.isRegisterOpen.asObservable();
+
+  constructor() { }
+
+  // Métodos para abrir los modales
+  openLogin(): void {
+    this.isRegisterOpen.next(false); // Cierra el otro modal si está abierto
+    this.isLoginOpen.next(true);
+  }
+
+  openRegister(): void {
+    this.isLoginOpen.next(false); // Cierra el otro modal si está abierto
+    this.isRegisterOpen.next(true);
+  }
+
+  // Método para cerrar todos los modales
+  closeAll(): void {
+    this.isLoginOpen.next(false);
+    this.isRegisterOpen.next(false);
+  }
+}

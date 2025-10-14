@@ -91,12 +91,12 @@
 
 .articles-section::before {
   left: 0;
-  background: linear-gradient(to right, white 20%, transparent);
+  background: linear-gradient(to right, white 1%, transparent);
 }
 
 .articles-section::after {
   right: 0;
-  background: linear-gradient(to left, white 20%, transparent);
+  background: linear-gradient(to left, white 1%, transparent);
 }
 
 .articles-section h2 {

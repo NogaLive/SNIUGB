@@ -5,6 +5,7 @@ from passlib.context import CryptContext
 from datetime import datetime, timedelta, timezone
 from dotenv import load_dotenv
 import os
+import re
 
 from sqlalchemy.orm import Session
 from src.models.database_models import Usuario, UserRole
@@ -80,3 +81,30 @@ async def get_current_admin_user(current_user: Usuario = Depends(get_current_use
             detail="Acceso denegado. Se requieren permisos de administrador."
         )
     return current_user
+
+def validate_password(password: str) -> bool:
+    """
+    Valida la contraseña contra los requisitos del negocio:
+    - 8 a 16 caracteres de longitud.
+    - Al menos un número.
+    - Al menos una letra mayúscula.
+    - Al menos un símbolo (cualquier carácter que no sea letra o número).
+    """
+    # 1. Comprueba la longitud
+    if not (8 <= len(password) <= 16):
+        return False
+        
+    # 2. Comprueba que contenga al menos un número
+    if not re.search(r'\d', password):
+        return False
+        
+    # 3. Comprueba que contenga al menos una letra mayúscula
+    if not re.search(r'[A-Z]', password):
+        return False
+        
+    # 4. Comprueba que contenga al menos un símbolo
+    if not re.search(r'[^a-zA-Z0-9]', password):
+        return False
+        
+    # Si pasa todas las comprobaciones, la contraseña es válida
+    return True

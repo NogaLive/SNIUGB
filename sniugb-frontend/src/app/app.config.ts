@@ -1,15 +1,17 @@
 import { ApplicationConfig } from '@angular/core';
 import { provideRouter } from '@angular/router';
-import { provideHttpClient } from '@angular/common/http'; // Para llamadas a la API
+import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { importProvidersFrom } from '@angular/core';
+
+import { authInterceptor } from './services/auth-interceptor'; 
 
 import { routes } from './app.routes';
 
 export const appConfig: ApplicationConfig = {
   providers: [
     provideRouter(routes),
-    provideHttpClient(), // Habilita el servicio para hablar con tu backend
-    importProvidersFrom(FormsModule) // Habilita el uso de formularios
+    provideHttpClient(withInterceptors([authInterceptor])),
+    importProvidersFrom(FormsModule)
   ]
 };

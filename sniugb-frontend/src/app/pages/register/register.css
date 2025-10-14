@@ -1,0 +1,226 @@
+:host {
+  width: 100%;
+  height: 100%;
+}
+
+/* CORRECCIÓN DE LAYOUT: El formulario es el contenedor principal y distribuye el espacio. */
+form {
+  display: fle;
+  flex-direction: column;
+  justify-content: space-between; /* Empuja el título arriba, el botón abajo y el grid en medio */
+  align-items: center;
+  width: 100%;
+  height: 100%;
+  padding: 3rem 4rem; /* Padding interno consistente */
+  box-sizing: border-box;
+}
+
+h3 {
+  font-family: 'Lexend', sans-serif;
+  font-weight: 500;
+  font-size: 2.2rem;
+  color: #26292E;
+  text-align: center;
+  margin: 0;
+}
+
+/* El grid se alinea horizontalmente */
+.form-grid {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: top; /* Se centra verticalmente en su espacio asignado */
+  gap: 2.5rem;
+  width: 100%;
+  padding: 2.5rem 0 2.5rem 0;
+}
+
+.form-inputs {
+  display: flex;
+  flex-direction: column;
+  gap: 2.5rem;
+}
+
+.form-group input {
+  width: 225px;
+  height: 40px;
+  border: 1px solid #ced4da;
+  border-radius: 6px;
+  padding: 0 1.5rem;
+  font-family: 'Lexend', sans-serif;
+  font-size: 1.6rem;
+  box-sizing: border-box;
+}
+
+.form-group input::placeholder {
+  font-family: 'Lexend', sans-serif;
+  font-weight: 500;
+  font-size: 1.8rem;
+  color: #72767A;
+}
+
+/* --- ESTILOS DE REQUISITOS DE CONTRASEÑA (CORRECCIÓN DE VIÑETA) --- */
+.password-requirements {
+  padding-top: 0.5rem;
+}
+
+.password-requirements .req-title {
+  font-family: 'Lexend', sans-serif;
+  font-weight: 500;
+  font-size: 1.8rem;
+  color: #72767A;
+  margin: 0 0 1rem 0;
+  max-width: 160px; 
+}
+
+.password-requirements ul {
+  /* CORRECCIÓN: Se elimina el estilo de lista nativo. */
+  list-style-type: none; 
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+.password-requirements li {
+  position: relative;
+  font-family: 'Lexend', sans-serif;
+  font-weight: 500;
+  font-size: 1.8rem;
+  overflow: hidden;
+  
+  /* CORRECCIÓN: Se añade padding para hacer espacio para nuestra viñeta personalizada. */
+  padding-left: 1.5rem; 
+  
+  /* Por defecto, el texto es rojo */
+  color: #BF0909; 
+}
+
+/* CORRECCIÓN: El ::before ahora es LA VIÑETA '•' */
+.password-requirements li::before {
+  content: '•';
+  position: absolute;
+  left: 0;
+  top: 0;
+  color: #BF0909; /* Viñeta roja por defecto */
+  transition: color 0.3s ease;
+}
+
+/* CORRECCIÓN: El ::after ahora es la CAPA DE ANIMACIÓN del texto verde */
+.password-requirements li::after {
+  content: attr(data-text);
+  position: absolute;
+  top: 0;
+  left: 1.5rem; /* Se alinea con el padding del texto */
+  
+  color: #128C7E;
+  background-color: #fff; /* Oculta el texto rojo de abajo */
+
+  width: 0%;
+  white-space: nowrap;
+  overflow: hidden;
+  transition: width 0.4s ease;
+}
+
+/* Cuando es válido, la capa de animación se expande */
+.password-requirements li.valid::after {
+  width: 100%;
+}
+
+/* Cuando es válido, la viñeta también cambia a verde */
+.password-requirements li.valid::before {
+  color: #128C7E;
+}
+
+/* CORRECCIÓN: Se crea un contenedor para el área del botón y el error */
+.submit-area {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  margin-top: 1rem; /* Espacio para separar del grid */
+}
+
+.submit-button {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  width: 15rem;
+  height: 4rem;
+  border: none;
+  border-radius: 8px;
+  background-color: #0056AC;
+  color: #fff;
+  cursor: pointer;
+  font-family: 'Lexend', sans-serif;
+  font-weight: 500;
+  font-size: 2.2rem;
+  transition: background-color 0.2s ease, opacity 0.2s ease;
+  flex-shrink: 0; /* Evita que el botón se encoja */
+}
+
+.submit-button:disabled {
+  background-color: #aeb8c2;
+  cursor: not-allowed;
+}
+
+/* --- CORRECCIÓN: Estilos unificados para los mensajes de feedback --- */
+
+/* Estilos comunes para ambos mensajes (layout, fuente, posición) */
+.error-message,
+.success-message {
+  font-size: 1.4rem;
+  font-weight: 500;
+  text-align: left;
+  max-width: 20rem; /* Límite de ancho para que el texto se ajuste */
+}
+
+/* Color específico para el mensaje de error */
+.error-message {
+  color: #BF0909; /* Rojo de la marca */
+}
+
+/* Color específico para el mensaje de éxito */
+.success-message {
+  color: #128C7E; /* Verde consistente con el resto del diseño */
+}
+
+/* --- ESTILOS PARA EL ÍCONO DE MOSTRAR/OCULTAR CONTRASEÑA --- */
+
+/* 1. El contenedor necesita ser 'relative' para posicionar el ícono dentro de él. */
+.password-wrapper {
+  position: relative;
+}
+
+/* 2. Se añade padding a la derecha del input para que el texto no se escriba debajo del ícono. */
+.password-wrapper input {
+  padding-right: 4.5rem; /* Espacio para el ícono */
+}
+
+/* 3. Se estiliza el botón que contiene el ícono. */
+.toggle-password-btn {
+  position: absolute;
+  top: 50%;
+  right: 1rem; /* 15px desde el borde derecho del input */
+  transform: translateY(-50%); /* Centrado vertical perfecto */
+  
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+}
+
+/* 4. Se define el tamaño del ícono SVG. */
+.toggle-password-btn img {
+  width: 2.2rem; /* 22px */
+  height: 2.2rem;
+  opacity: 0.6; /* Un poco transparente para que no sea tan invasivo */
+  transition: opacity 0.2s ease;
+}
+
+.toggle-password-btn:hover img {
+  opacity: 1; /* Opacidad completa al pasar el mouse */
+}

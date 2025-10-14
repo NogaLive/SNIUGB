@@ -21,6 +21,7 @@ from src.api.soporte import soporte_router
 from src.api.categorias import categorias_router
 from src.api.chatbot import chatbot_router
 
+
 # --- Importaciones del Scheduler ---
 from src.jobs.scheduler import scheduler, setup_jobs
 

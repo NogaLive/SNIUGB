@@ -4,11 +4,12 @@ import { Router, ActivatedRoute, RouterLink } from '@angular/router';
 import { ApiService } from '../../services/api';
 import { Categoria } from '../../models/categoria.model';
 import { Articulo } from '../../models/articulo.model';
+import { TruncatePipe } from '../../pipes/truncate.pipe';
 
 @Component({
   selector: 'app-publicaciones',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, TruncatePipe],
   templateUrl: './publicaciones.html',
   styleUrls: ['./publicaciones.css']
 })
