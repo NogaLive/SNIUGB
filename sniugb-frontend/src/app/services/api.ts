@@ -69,4 +69,19 @@ export class ApiService {
   getMiPerfil(): Observable<UserResponse> {
     return this.http.get<UserResponse>(`${this.backendUrl}/users/me`);
   }
+
+  getArticuloBySlug(slug: string): Observable<Articulo> {
+    // Apunta al endpoint público que creamos para obtener un solo artículo.
+    return this.http.get<Articulo>(`${this.backendUrl}/publicaciones/${slug}`);
+  }
+
+  getPopularArticles(): Observable<Articulo[]> {
+    // Asume que tendrás un endpoint '/populares' en tu router de publicaciones.
+    return this.http.get<Articulo[]>(`${this.backendUrl}/publicaciones/populares`);
+  }
+
+  getRecentArticles(): Observable<Articulo[]> {
+    // Asume que tendrás un endpoint '/recientes' en tu router de publicaciones.
+    return this.http.get<Articulo[]>(`${this.backendUrl}/publicaciones/recientes`);
+  }
 }

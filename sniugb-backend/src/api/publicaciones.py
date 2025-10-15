@@ -1,16 +1,32 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session, joinedload
-from typing import List
-
+from sqlalchemy import desc
 from src.utils.security import get_db
 from src.models import database_models as models
-# CORRECCIÓN: Importamos los esquemas correctos desde admin_models
 from src.models.admin_models import ArticulosResponse, ArticuloSchema 
 
 publicaciones_router = APIRouter(
     prefix="/publicaciones",
     tags=["Publicaciones Públicas"],
 )
+
+@publicaciones_router.get("/populares", response_model=list[ArticuloSchema])
+def get_articulos_populares(db: Session = Depends(get_db)):
+    """Devuelve los 5 artículos con más vistas."""
+    return db.query(models.Articulo)\
+        .filter(models.Articulo.estado_publicacion == "publicado")\
+        .order_by(desc(models.Articulo.vistas))\
+        .limit(5)\
+        .all()
+
+@publicaciones_router.get("/recientes", response_model=list[ArticuloSchema])
+def get_articulos_recientes(db: Session = Depends(get_db)):
+    """Devuelve los 5 artículos más recientes."""
+    return db.query(models.Articulo)\
+        .filter(models.Articulo.estado_publicacion == "publicado")\
+        .order_by(desc(models.Articulo.fecha_publicacion))\
+        .limit(5)\
+        .all()
 
 @publicaciones_router.get("/", response_model=ArticulosResponse)
 def get_publicaciones(

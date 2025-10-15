@@ -1,0 +1,205 @@
+:host {
+  display: block;
+  background-color: #fff;
+}
+
+/* --- Estilos del Encabezado (Hero) --- */
+.article-hero {
+  height: 45vh;
+  min-height: 400px;
+  background-size: cover;
+  background-position: center;
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: #fff;
+  text-align: center;
+}
+
+.hero-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.hero-content {
+  max-width: 900px;
+  padding: 2rem;
+}
+
+.hero-category {
+  display: inline-block;
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: #fff;
+  text-decoration: none;
+  border: 1px solid #fff;
+  padding: 0.5rem 1.5rem;
+  border-radius: 50px;
+  margin-bottom: 2rem;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+.hero-category:hover {
+  background-color: #fff;
+  color: #26292E;
+}
+
+.hero-content h1 {
+  font-size: clamp(3rem, 5vw, 4.8rem);
+  font-weight: 700;
+  line-height: 1.2;
+  margin: 0 0 2rem 0;
+  text-shadow: 1px 1px 5px rgba(0,0,0,0.5);
+}
+
+.article-meta-hero {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.5rem;
+  font-size: 1.6rem;
+}
+.article-meta-hero .separator { opacity: 0.7; }
+.article-meta-hero .views-counter { display: flex; align-items: center; gap: 0.8rem; }
+.article-meta-hero img { width: 2rem; height: 2rem; filter: brightness(0) invert(1); }
+
+/* --- Estilos del Contenido Principal --- */
+.article-main-content {
+  display: grid;
+  grid-template-columns: 3fr 1fr;
+  gap: 6rem;
+  max-width: 1400px;
+  margin: 6rem auto;
+  padding: 0 4rem;
+}
+
+/* --- Columna del Artículo --- */
+.article-body {
+  max-width: 800px;
+  font-size: 1.8rem;
+  line-height: 1.7;
+  color: #26292E;
+}
+.article-body h2, .article-body h3 {
+  margin: 4rem 0 2rem 0;
+}
+
+/* --- Barra Lateral --- */
+.article-sidebar { width: 100%; }
+.sidebar-sticky-content { position: sticky; top: 120px; display: flex; flex-direction: column; gap: 4rem; }
+.sidebar-widget h4 { font-size: 2rem; margin: 0 0 1.5rem 0; border-bottom: 2px solid #BF0909; padding-bottom: 1rem; }
+.social-share-buttons { display: flex; gap: 1.5rem; }
+
+.tabs { display: flex; border-bottom: 1px solid #dee2e6; margin-bottom: 1.5rem; }
+.tabs button { padding: 1rem; border: none; background: none; font-size: 1.6rem; font-weight: 500; cursor: pointer; color: #6C757D; border-bottom: 3px solid transparent; }
+.tabs button.active { color: #BF0909; border-bottom-color: #BF0909; }
+
+/* --- CORRECCIÓN: Estilos para la lista de artículos de la barra lateral --- */
+.sidebar-widget ul.sidebar-article-list {
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.sidebar-article-link {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  text-decoration: none;
+  color: inherit;
+}
+
+.rank-number {
+  font-size: 2.4rem;
+  font-weight: 700;
+  color: #6C757D;
+  align-self: flex-start;
+}
+
+.sidebar-article-image {
+  width: 65px;
+  height: 65px;
+  flex-shrink: 0;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.sidebar-article-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.sidebar-article-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.sidebar-article-info .category-tag {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #BF0909;
+}
+
+.sidebar-article-info h4 {
+  font-family: 'Lexend', sans-serif;
+  font-size: 1.6rem;
+  font-weight: 500;
+  line-height: 1.5;
+  margin: 0;
+  color: #26292E;
+  transition: color 0.2s ease;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+.sidebar-article-link:hover .sidebar-article-info h4 {
+  color: #BF0909;
+}
+
+/* --- AÑADE ESTOS ESTILOS PARA EL BOTÓN DE REGRESAR --- */
+
+.back-to-articles-btn {
+  position: absolute;
+  top: 2rem;
+  left: 2rem;
+  z-index: 10; /* Se asegura de que esté por encima del overlay */
+  
+  display: inline-flex;
+  align-items: center;
+  gap: 1rem;
+  
+  padding: 0.8rem 1.5rem;
+  background-color: rgba(255, 255, 255, 0.15); /* Fondo blanco semi-transparente */
+  color: #fff;
+  text-decoration: none;
+  font-size: 1.5rem;
+  font-weight: 500;
+  border-radius: 50px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  backdrop-filter: blur(5px); /* Efecto de desenfoque de fondo */
+  transition: background-color 0.2s ease;
+}
+
+.back-to-articles-btn:hover {
+  background-color: rgba(255, 255, 255, 0.25);
+}
+
+.back-to-articles-btn svg {
+  width: 2rem;
+  height: 2rem;
+}

@@ -17,6 +17,11 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/publicaciones/publicaciones').then(m => m.PublicacionesComponent),
     // Esta ruta puede ser vista por todos, por lo que no necesita guardián.
   },
+
+  {
+    path: 'articulo/:slug',
+    loadComponent: () => import('./pages/articulo/articulo').then(m => m.ArticuloComponent)
+  },
   
   // --- Rutas Protegidas ---
   {
@@ -38,4 +43,5 @@ export const routes: Routes = [
 
   // Redirección por si el usuario escribe una ruta que no existe
   { path: '**', redirectTo: '', pathMatch: 'full' }
+
 ];

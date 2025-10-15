@@ -1,0 +1,85 @@
+<div class="article-page-container" *ngIf="articulo">
+  <header 
+    class="article-hero" 
+    [style.backgroundImage]="'url(' + backendUrl + '/static/images/articulos/display/' + articulo.imagen_display_url + ')'">
+    <a [routerLink]="['/publicaciones']" class="back-to-articles-btn">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+        </svg>
+        <span>Volver a Publicaciones</span>
+    </a>
+    <div class="hero-overlay">
+      <div class="hero-content">
+        <a [routerLink]="['/publicaciones']" [queryParams]="{categoria: articulo.categoria.id}" class="hero-category">{{ articulo.categoria.nombre }}</a>
+        <h1>{{ articulo.titulo }}</h1>
+        <div class="article-meta-hero">
+          <span>Por: <strong>{{ articulo.autor.nombre_completo }}</strong></span>
+          <span class="separator">•</span>
+          <span>Publicado el {{ articulo.fecha_publicacion | date:'longDate':'':'es' }}</span>
+          <span class="separator">•</span>
+          <div class="views-counter">
+            <img src="assets/publicaciones/vistas-logo.svg" alt="Icono de vistas">
+            <span>{{ articulo.vistas }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="article-main-content">
+    <article class="article-body">
+      <div [innerHTML]="contenidoSanitizado"></div>
+    </article>
+
+    <aside class="article-sidebar">
+      <div class="sidebar-sticky-content">
+        
+        <div class="sidebar-widget">
+          <h4>Compartir</h4>
+          <div class="social-share-buttons">
+            <a href="#" class="social-icon whatsapp" aria-label="Compartir en WhatsApp"></a>
+            <a href="#" class="social-icon twitter" aria-label="Compartir en X/Twitter"></a>
+            <a href="#" class="social-icon facebook" aria-label="Compartir en Facebook"></a>
+          </div>
+        </div>
+
+        <div class="sidebar-widget">
+          <div class="tabs">
+            <button [class.active]="sidebarTabActiva === 'populares'" (click)="cambiarTabSidebar('populares')">Populares</button>
+            <button [class.active]="sidebarTabActiva === 'recientes'" (click)="cambiarTabSidebar('recientes')">Recientes</button>
+          </div>
+          
+          <ul *ngIf="sidebarTabActiva === 'populares'" class="sidebar-article-list">
+            <li *ngFor="let popular of articulosPopulares; let i = index">
+              <a [routerLink]="['/articulo', popular.slug]" class="sidebar-article-link">
+                <span class="rank-number">{{ i + 1 }}</span>
+                <div class="sidebar-article-image">
+                  <img [src]="backendUrl + '/static/images/articulos/thumbnails/' + popular.imagen_thumbnail_url" [alt]="popular.titulo">
+                </div>
+                <div class="sidebar-article-info">
+                  <span class="category-tag">{{ popular.categoria.nombre }}</span>
+                  <h4>{{ popular.titulo }}</h4>
+                </div>
+              </a>
+            </li>
+          </ul>
+        
+          <ul *ngIf="sidebarTabActiva === 'recientes'" class="sidebar-article-list">
+            <li *ngFor="let reciente of articulosRecientes">
+              <a [routerLink]="['/articulo', reciente.slug]" class="sidebar-article-link">
+                <div class="sidebar-article-image">
+                  <img [src]="backendUrl + '/static/images/articulos/thumbnails/' + reciente.imagen_thumbnail_url" [alt]="reciente.titulo">
+                </div>
+                <div class="sidebar-article-info">
+                  <span class="category-tag">{{ reciente.categoria.nombre }}</span>
+                  <h4>{{ reciente.titulo }}</h4>
+                </div>
+              </a>
+            </li>
+          </ul>
+        </div>
+
+      </div>
+    </aside>
+  </main>
+</div>

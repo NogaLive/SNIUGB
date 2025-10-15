@@ -51,10 +51,14 @@ class ArticuloSchema(BaseModel):
     slug: str
     titulo: str
     resumen: str
-    imagen_thumbnail_url: str # Usamos el nombre de campo corregido de la base de datos
+
+    imagen_display_url: str
+    imagen_thumbnail_url: str
+
+    fecha_publicacion: datetime
+    contenido_html: str
     vistas: int
     
-    # Aquí anidamos los esquemas de autor y categoría
     categoria: CategoriaSchema
     autor: AutorSchema
 
