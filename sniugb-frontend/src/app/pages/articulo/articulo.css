@@ -29,78 +29,128 @@
   align-items: center;
 }
 
-.hero-content {
-  max-width: 900px;
-  padding: 2rem;
-}
-
-.hero-category {
-  display: inline-block;
-  font-size: 1.6rem;
-  font-weight: 700;
-  color: #fff;
-  text-decoration: none;
-  border: 1px solid #fff;
-  padding: 0.5rem 1.5rem;
-  border-radius: 50px;
-  margin-bottom: 2rem;
-  transition: background-color 0.2s ease, border-color 0.2s ease;
-}
-.hero-category:hover {
-  background-color: #fff;
-  color: #26292E;
-}
-
-.hero-content h1 {
-  font-size: clamp(3rem, 5vw, 4.8rem);
-  font-weight: 700;
-  line-height: 1.2;
-  margin: 0 0 2rem 0;
-  text-shadow: 1px 1px 5px rgba(0,0,0,0.5);
-}
-
-.article-meta-hero {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 0.5rem 1.5rem;
-  font-size: 1.6rem;
-}
+.hero-content { max-width: 1000px; padding: 2rem; }
+.hero-category { display: inline-block; font-size: 1.6rem; font-weight: 700; color: #fff; text-decoration: none; border: 1px solid #fff; padding: 0.5rem 1.5rem; border-radius: 50px; margin-bottom: 2rem; transition: background-color 0.2s ease, border-color 0.2s ease; }
+.hero-category:hover { background-color: #fff; color: #26292E; }
+.hero-content h1 { font-size: clamp(3rem, 5vw, 4.8rem); font-weight: 700; line-height: 1.2; margin: 0 0 3rem 0; text-shadow: 1px 1px 5px rgba(0,0,0,0.5); }
+.article-meta-hero { display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: 0.5rem 1.5rem; font-size: 1.6rem; }
 .article-meta-hero .separator { opacity: 0.7; }
 .article-meta-hero .views-counter { display: flex; align-items: center; gap: 0.8rem; }
 .article-meta-hero img { width: 2rem; height: 2rem; filter: brightness(0) invert(1); }
+
+.back-to-articles-btn {
+  position: absolute;
+  top: 2rem;
+  left: 2rem;
+  z-index: 10;
+  display: inline-flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.8rem 1.5rem;
+  background-color: rgba(255, 255, 255, 0.15);
+  color: #fff;
+  text-decoration: none;
+  font-size: 1.5rem;
+  font-weight: 500;
+  border-radius: 50px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  backdrop-filter: blur(5px);
+  transition: background-color 0.2s ease;
+}
+.back-to-articles-btn:hover { background-color: rgba(255, 255, 255, 0.25); }
+.back-to-articles-btn svg { width: 2rem; height: 2rem; }
 
 /* --- Estilos del Contenido Principal --- */
 .article-main-content {
   display: grid;
   grid-template-columns: 3fr 1fr;
   gap: 6rem;
-  max-width: 1400px;
+  max-width: 1550px;
   margin: 6rem auto;
   padding: 0 4rem;
 }
 
 /* --- Columna del Artículo --- */
 .article-body {
-  max-width: 800px;
+  max-width: 900px;
   font-size: 1.8rem;
   line-height: 1.7;
   color: #26292E;
 }
-.article-body h2, .article-body h3 {
-  margin: 4rem 0 2rem 0;
-}
+/* Estilos para el contenido HTML renderizado */
+.article-body ::ng-deep h2, .article-body ::ng-deep h3 { margin: 4rem 0 2rem 0; }
+.article-body ::ng-deep p { margin-bottom: 2rem; }
+.article-body ::ng-deep ul, .article-body ::ng-deep ol { padding-left: 3rem; margin-bottom: 2rem; }
 
 /* --- Barra Lateral --- */
 .article-sidebar { width: 100%; }
-.sidebar-sticky-content { position: sticky; top: 120px; display: flex; flex-direction: column; gap: 4rem; }
-.sidebar-widget h4 { font-size: 2rem; margin: 0 0 1.5rem 0; border-bottom: 2px solid #BF0909; padding-bottom: 1rem; }
-.social-share-buttons { display: flex; gap: 1.5rem; }
 
-.tabs { display: flex; border-bottom: 1px solid #dee2e6; margin-bottom: 1.5rem; }
-.tabs button { padding: 1rem; border: none; background: none; font-size: 1.6rem; font-weight: 500; cursor: pointer; color: #6C757D; border-bottom: 3px solid transparent; }
-.tabs button.active { color: #BF0909; border-bottom-color: #BF0909; }
+.sidebar-sticky-content {
+  position: sticky;
+  top: 6rem; /* Ajustado el top */
+  display: flex;
+  flex-direction: column;
+  gap: 3rem;
+}
+
+.sidebar-widget h4 { font-size: 2rem; margin: 0 0 3rem 0; border-bottom: 2px solid #BF0909; padding-bottom: 1rem; }
+.social-share-buttons { display: flex; gap: 3rem; }
+
+/* --- CORRECCIÓN: Estilos para los iconos de compartir (IMG) --- */
+.social-icon {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  width: 4rem;
+  height: 4rem;
+  border-radius: 50%;
+  background-color: #f1f3f5;
+  transition: all 0.2s ease;
+}
+
+/* Estiliza la imagen SVG dentro del enlace */
+.social-icon img {
+  width: 2.2rem; /* Tamaño del ícono */
+  height: 2.2rem;
+  /* El filtro se usa para cambiar el color del SVG */
+  filter: invert(30%) sepia(11%) saturate(200%) hue-rotate(170deg) brightness(95%) contrast(90%); /* Color #495057 */
+  transition: filter 0.2s ease;
+}
+
+.social-icon:hover {
+  background-color: #BF0909;
+}
+
+/* Al pasar el mouse, el filtro cambia la imagen a blanco */
+.social-icon:hover img {
+  filter: brightness(0) invert(1);
+}
+/* --- FIN DE LA CORRECCIÓN --- */
+
+
+/* --- CORRECCIÓN: Rediseño de Pestañas --- */
+.tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr; /* 2 columnas de 50% cada una */
+  margin-bottom: 2.5rem;
+}
+.tabs button {
+  padding: 1.5rem 1rem;
+  border: none;
+  background: none;
+  font-size: 1.6rem;
+  font-weight: 700; /* Grosor más grande */
+  cursor: pointer;
+  color: #6C757D; /* Color oscuro/apagado */
+  border-bottom: 3px solid #dee2e6;
+  text-align: center;
+  transition: all 0.2s ease;
+}
+.tabs button.active {
+  color: #BF0909;
+  border-bottom-color: #BF0909;
+  border-bottom-width: 4px; /* Barra activa más gruesa */
+}
 
 /* --- CORRECCIÓN: Estilos para la lista de artículos de la barra lateral --- */
 .sidebar-widget ul.sidebar-article-list {
@@ -109,7 +159,7 @@
   margin: 0;
   display: flex;
   flex-direction: column;
-  gap: 2rem;
+  gap: 2.5rem; /* Aumenta el espaciado vertical */
 }
 
 .sidebar-article-link {
@@ -118,13 +168,14 @@
   gap: 1.5rem;
   text-decoration: none;
   color: inherit;
+  height: 8rem; /* Altura fija de 80px */
 }
 
 .rank-number {
   font-size: 2.4rem;
   font-weight: 700;
-  color: #6C757D;
-  align-self: flex-start;
+  color: #dee2e6;
+  align-self: center;
 }
 
 .sidebar-article-image {
@@ -145,6 +196,7 @@
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  overflow: hidden; /* Oculta cualquier desbordamiento */
 }
 
 .sidebar-article-info .category-tag {
@@ -157,49 +209,21 @@
   font-family: 'Lexend', sans-serif;
   font-size: 1.6rem;
   font-weight: 500;
-  line-height: 1.5;
+  line-height: 1.4;
   margin: 0;
   color: #26292E;
   transition: color 0.2s ease;
+  
+  /* Truncado a 2 líneas */
   overflow: hidden;
   display: -webkit-box;
   -webkit-box-orient: vertical;
-  -webkit-line-clamp: 3;
+  -webkit-line-clamp: 2;
+  
+
+  max-height: 4rem; 
 }
 
 .sidebar-article-link:hover .sidebar-article-info h4 {
   color: #BF0909;
-}
-
-/* --- AÑADE ESTOS ESTILOS PARA EL BOTÓN DE REGRESAR --- */
-
-.back-to-articles-btn {
-  position: absolute;
-  top: 2rem;
-  left: 2rem;
-  z-index: 10; /* Se asegura de que esté por encima del overlay */
-  
-  display: inline-flex;
-  align-items: center;
-  gap: 1rem;
-  
-  padding: 0.8rem 1.5rem;
-  background-color: rgba(255, 255, 255, 0.15); /* Fondo blanco semi-transparente */
-  color: #fff;
-  text-decoration: none;
-  font-size: 1.5rem;
-  font-weight: 500;
-  border-radius: 50px;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  backdrop-filter: blur(5px); /* Efecto de desenfoque de fondo */
-  transition: background-color 0.2s ease;
-}
-
-.back-to-articles-btn:hover {
-  background-color: rgba(255, 255, 255, 0.25);
-}
-
-.back-to-articles-btn svg {
-  width: 2rem;
-  height: 2rem;
 }

@@ -39,12 +39,14 @@ class UserUpdatePasswordSchema(BaseModel):
     new_password: str
 
 class ForgotPasswordSchema(BaseModel):
-    # Se cambia 'dni' por 'numero_de_dni' para consistencia
     numero_de_dni: str
     method: str
 
+class VerifyCodeSchema(BaseModel):
+    numero_de_dni: str
+    code: str
+
 class ResetPasswordSchema(BaseModel):
-    # Se cambia 'dni' por 'numero_de_dni' para consistencia
     numero_de_dni: str
     code: str
     new_password: str

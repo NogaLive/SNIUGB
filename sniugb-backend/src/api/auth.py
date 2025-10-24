@@ -6,7 +6,7 @@ import random
 from datetime import datetime, timedelta, timezone
 
 # Importaciones de modelos y servicios
-from src.models.user_models import UserCreateSchema, UserResponseSchema, ForgotPasswordSchema, ResetPasswordSchema
+from src.models.user_models import UserCreateSchema, UserResponseSchema, ForgotPasswordSchema, VerifyCodeSchema, ResetPasswordSchema
 from src.models.database_models import Usuario
 from src.services.auth_service import create_new_user
 from src.services.notification_service import send_reset_code_by_email, send_reset_code_by_whatsapp
@@ -65,10 +65,10 @@ async def login_user(form_data: OAuth2PasswordRequestForm = Depends(), db: Sessi
 
 @auth_router.post("/forgot-password")
 async def forgot_password(request: ForgotPasswordSchema, db: Session = Depends(get_db)):
-    user = db.query(Usuario).filter(Usuario.numero_de_dni == request.dni).first()
+    user = db.query(Usuario).filter(Usuario.numero_de_dni == request.numero_de_dni).first()
     
     if not user:
-        return {"message": "Si existe una cuenta asociada a ese DNI, se ha enviado un código de recuperación."}
+        return {"message": "Se envió un código a su método de recuperación."}
 
     code = str(random.randint(100000, 999999))
     
@@ -83,11 +83,32 @@ async def forgot_password(request: ForgotPasswordSchema, db: Session = Depends(g
     else:
         raise HTTPException(status_code=400, detail="Método no válido. Debe ser 'email' o 'whatsapp'.")
         
-    return {"message": "Si existe una cuenta asociada a ese DNI, se ha enviado un código de recuperación."}
+    return {"message": "Se envió un código a su método de recuperación."}
+
+@auth_router.post("/verify-code")
+async def verify_reset_code(request: VerifyCodeSchema, db: Session = Depends(get_db)):
+    """
+    Verifica si un código de reseteo es válido para un DNI.
+    """
+    user = db.query(Usuario).filter(Usuario.numero_de_dni == request.numero_de_dni).first()
+
+    # Comprobación de seguridad robusta
+    if not user or \
+       not user.reset_token or \
+       user.reset_token != request.code or \
+       user.reset_token_expires < datetime.now(timezone.utc):
+        
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="El código es inválido o ha expirado."
+        )
+    
+    # Si el código es correcto y no ha expirado, devolvemos un éxito.
+    return {"message": "Código verificado exitosamente."}
 
 @auth_router.post("/reset-password")
 async def reset_password(request: ResetPasswordSchema, db: Session = Depends(get_db)):
-    user = db.query(Usuario).filter(Usuario.numero_de_dni == request.dni).first()
+    user = db.query(Usuario).filter(Usuario.numero_de_dni == request.numero_de_dni).first()
     
     if not user:
         raise HTTPException(status_code=404, detail="Usuario no encontrado.")

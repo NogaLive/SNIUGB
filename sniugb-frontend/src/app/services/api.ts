@@ -24,6 +24,26 @@ export interface UserRegisterData {
   password: string;
 }
 
+export interface ForgotPasswordRequest {
+  numero_de_dni: string;
+  method: 'email' | 'whatsapp';
+}
+
+export interface ForgotPasswordResponse {
+  message: string;
+}
+
+export interface VerifyCodeRequest {
+  numero_de_dni: string;
+  code: string;
+}
+
+export interface ResetPasswordRequest {
+  numero_de_dni: string;
+  code: string;
+  new_password: string;
+}
+
 export interface UserResponse {
   numero_de_dni: string;
   nombre_completo: string;
@@ -64,6 +84,18 @@ export class ApiService {
 
   register(userData: UserRegisterData): Observable<UserResponse> {
     return this.http.post<UserResponse>(`${this.backendUrl}/auth/register`, userData);
+  }
+
+  forgotPassword(data: ForgotPasswordRequest): Observable<ForgotPasswordResponse> {
+    return this.http.post<ForgotPasswordResponse>(`${this.backendUrl}/auth/forgot-password`, data);
+  }
+
+  verifyCode(data: VerifyCodeRequest): Observable<any> {
+    return this.http.post(`${this.backendUrl}/auth/verify-code`, data);
+  }
+
+  resetPassword(data: ResetPasswordRequest): Observable<any> {
+    return this.http.post(`${this.backendUrl}/auth/reset-password`, data);
   }
 
   getMiPerfil(): Observable<UserResponse> {

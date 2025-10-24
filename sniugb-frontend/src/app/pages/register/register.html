@@ -2,10 +2,6 @@
   
   <h3>Ingrese sus datos personales:</h3>
 
-  <div *ngIf="mensaje" [ngClass]="{ 'error-message': esError, 'success-message': !esError }">
-    {{ mensaje }}
-  </div>
-
   <div class="form-grid">
     <div class="form-inputs">
       <div class="form-group">
@@ -53,6 +49,15 @@
 
   <div class="submit-area">
     <button type="submit" class="submit-button" [disabled]="isFormInvalid">Registrarse</button>
+    
+    <div 
+      *ngIf="mensaje" 
+      [ngClass]="{
+        'error-message': esError, 
+        'success-message': !esError
+      }">
+      {{ mensaje }}
+    </div>
   </div>
 
 </form>

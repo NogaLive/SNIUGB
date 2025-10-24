@@ -31,6 +31,11 @@ export class LoginComponent {
     private modalService: ModalService
   ) {}
 
+  openForgotPassword(): void {
+    // Cierra el modal de login y abre el de recuperar contraseña
+    this.modalService.openForgotPassword();
+  }
+
   // Se mantiene tu función para limpiar los errores visuales cuando el usuario escribe.
   resetErrors(): void {
     if (this.dniError || this.contrasenaError) {

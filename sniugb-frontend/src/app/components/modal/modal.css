@@ -33,3 +33,8 @@
   width: 450px;
   height: 400px;
 }
+
+.modal-content.forgot-password-modal {
+  width: 400px;
+  height: 380px;
+}
