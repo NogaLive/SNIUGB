@@ -1,0 +1,42 @@
+<div class="modal-overlay">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2>Bienvenido a SNIUGB</h2>
+      <p>Para comenzar, debes registrar tu primer predio. Es el lugar donde se registrarán tus animales.</p>
+    </div>
+    
+    <form class="modal-body" [formGroup]="predioForm" (ngSubmit)="onSubmit()">
+      <div class="form-group">
+        <label for="nombre_predio">Nombre del Predio</label>
+        <input type="text" id="nombre_predio" formControlName="nombre_predio" placeholder="Ej: Fundo La Esperanza">
+      </div>
+      
+      <div class="form-group">
+        <label for="departamento">Departamento</label>
+        <select id="departamento" formControlName="departamento">
+          
+          <option value="" disabled>
+            {{ isLoadingDepartamentos ? 'Cargando...' : 'Selecciona un departamento...' }}
+          </option>
+          <option *ngFor="let depa of departamentos" [value]="depa.nombre">
+            {{ depa.nombre }}
+          </option>
+          </select>
+      </div>
+
+      <div class="form-group">
+        <label for="ubicacion">Ubicación (Provincia / Distrito)</label>
+        <input type="text" id="ubicacion" formControlName="ubicacion" placeholder="Ej: Cieneguilla, Lima">
+      </div>
+
+      <div class="modal-footer">
+        <button type="submit" class="btn-submit" [disabled]="isLoading || isLoadingDepartamentos">
+          {{ isLoading ? 'Guardando...' : 'Guardar Predio' }}
+        </button>
+        <div *ngIf="errorMessage" class="error-message">
+          {{ errorMessage }}
+        </div>
+      </div>
+    </form>
+  </div>
+</div>

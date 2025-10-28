@@ -1,7 +1,7 @@
 from sqlalchemy import (Column, String, DateTime, func, ForeignKey, Integer, 
                           Enum as SQLAlchemyEnum, Text, Boolean)
 from sqlalchemy.orm import relationship
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import declarative_base
 import uuid
 import enum
 import random
@@ -69,9 +69,11 @@ class Usuario(Base):
     password = Column(String, nullable=False)
     estado = Column(String, default="activo")
     rol = Column(SQLAlchemyEnum(UserRole, name='user_role_enum'), default=UserRole.GANADERO, nullable=False)
+    refresh_tokens = relationship("RefreshToken", back_populates="user", cascade="all, delete-orphan")
     fecha_de_registro = Column(DateTime(timezone=True), server_default=func.now())
     reset_token = Column(String, nullable=True)
     reset_token_expires = Column(DateTime(timezone=True), nullable=True)
+
     predios = relationship("Predio", back_populates="propietario")
     
 
@@ -222,3 +224,14 @@ class SolicitudSoporte(Base):
     mensaje = Column(Text, nullable=False)
     estado = Column(String, default="Abierto")
     fecha_creacion = Column(DateTime(timezone=True), server_default=func.now())
+
+class RefreshToken(Base):
+    __tablename__ = "refresh_tokens"
+    id = Column(Integer, primary_key=True, index=True)
+    jti = Column(String, unique=True, index=True, nullable=False)
+    usuario_dni = Column(String, ForeignKey("datos_del_usuario.numero_de_dni"), nullable=False, index=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    expires_at = Column(DateTime(timezone=True), nullable=False)
+    revoked_at = Column(DateTime(timezone=True), nullable=True)
+
+    user = relationship("Usuario", back_populates="refresh_tokens")

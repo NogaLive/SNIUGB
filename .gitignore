@@ -1,0 +1,28 @@
+cd "C:\Users\ulloa\Desktop\SNIUGB"
+
+@"
+# --- Sistema ---
+.DS_Store
+Thumbs.db
+
+# --- IDE ---
+.vscode/
+.idea/
+
+# --- Backend (Python / FastAPI) ---
+sniugb-backend/.venv/
+sniugb-backend/__pycache__/
+sniugb-backend/.pytest_cache/
+sniugb-backend/.mypy_cache/
+sniugb-backend/*.py[cod]
+sniugb-backend/.env
+sniugb-backend/alembic/*.pyc
+
+# --- Frontend (Angular) ---
+sniugb-frontend/node_modules/
+sniugb-frontend/dist/
+sniugb-frontend/.angular/
+sniugb-frontend/.env
+sniugb-frontend/.env.local
+sniugb-frontend/coverage/
+"@ | Out-File -Encoding utf8 .gitignore

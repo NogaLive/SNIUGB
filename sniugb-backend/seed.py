@@ -1,9 +1,7 @@
-from src.config.database import SessionLocal, engine
+from src.config.database import SessionLocal
 from src.models.database_models import Base, Raza, Departamento
 
 # Crea las tablas si no existen
-Base.metadata.create_all(bind=engine)
-
 # Obtiene una sesión de la base de datos
 db = SessionLocal()
 

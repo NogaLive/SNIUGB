@@ -5,6 +5,7 @@ from passlib.context import CryptContext
 from datetime import datetime, timedelta, timezone
 from dotenv import load_dotenv
 import os
+import uuid
 import re
 
 from sqlalchemy.orm import Session
@@ -16,7 +17,8 @@ load_dotenv()
 # --- Configuración de Seguridad ---
 SECRET_KEY = os.getenv("JWT_SECRET")
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 1440 # 24 horas
+ACCESS_TOKEN_EXPIRE_MINUTES = 30  # 30 minutos
+REFRESH_TOKEN_EXPIRE_DAYS = int(os.getenv('REFRESH_TOKEN_EXPIRE_DAYS','15'))
 
 # --- Hashing de Contraseñas ---
 pwd_context = CryptContext(schemes=["argon2", "bcrypt"], deprecated="auto")
@@ -28,7 +30,7 @@ def get_password_hash(password: str) -> str:
     return pwd_context.hash(password)
 
 # --- Creación de Tokens JWT ---
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/login")
 
 def create_access_token(data: dict):
     to_encode = data.copy()
@@ -108,3 +110,20 @@ def validate_password(password: str) -> bool:
         
     # Si pasa todas las comprobaciones, la contraseña es válida
     return True
+
+
+def create_refresh_token(data: dict, expires_delta: timedelta | None = None):
+    to_encode = data.copy()
+    jti = str(uuid.uuid4())
+    expire = datetime.now(timezone.utc) + (expires_delta or timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS))
+    to_encode.update({"exp": expire, "type": "refresh", "jti": jti})
+    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    return encoded_jwt, jti, expire
+
+
+def decode_token(token: str) -> dict | None:
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        return payload
+    except JWTError:
+        return None

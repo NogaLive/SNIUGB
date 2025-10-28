@@ -1,0 +1,147 @@
+:host {
+  /* Forzamos la tipografía Lexend para todo el componente */
+  font-family: 'Lexend', sans-serif;
+  --color-azul: #0056AC;
+  --color-texto: #26292E;
+  --color-texto-sec: #6C757D;
+  --color-rojo: #BF0909;
+  --color-blanco: #ffffff;
+  --borde-color: #dee2e6;
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(255, 255, 255, 0.1); 
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(10px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  font-family: 'Lexend', sans-serif;
+}
+
+.modal-content {
+  background: var(--color-blanco);
+  /* Usamos un padding similar al de 'register.css' */
+  padding: 3rem 4rem; 
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--borde-color);
+  width: 100%;
+  max-width: 55rem; /* 550px (más ancho que antes) */
+}
+
+.modal-header {
+  text-align: center;
+  border-bottom: 1px solid var(--borde-color);
+  padding-bottom: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.modal-header h2 {
+  color: var(--color-texto);
+  font-weight: 500; /* Medium (como en login) */
+  font-size: 2.6rem; /* 22px (como en login) */
+  margin: 0;
+}
+
+.modal-header p {
+  color: var(--color-texto-sec);
+  /* Tamaño regular (como en forgot-password) */
+  font-size: 1.6rem; 
+  font-weight: 400; /* Regular */
+  margin-top: 0.75rem;
+  margin-bottom: 0;
+  line-height: 1.6;
+}
+
+.form-group {
+  margin-bottom: 2rem; /* 20px (un poco menos que 2.5rem de login) */
+}
+
+.form-group label {
+  display: block;
+  font-weight: 500; /* Medium */
+  color: var(--color-texto);
+  margin-bottom: 0.8rem; /* 8px */
+  font-size: 1.6rem; /* 16px */
+}
+
+.form-group input[type="text"],
+.form-group select {
+  width: 100%;
+  height: 40px; /* Altura fija (como en login) */
+  border: 1px solid #ced4da;
+  border-radius: 6px;
+  padding: 0 1.5rem; /* 24px (como en login) */
+  font-family: 'Lexend', sans-serif;
+  font-size: 1.6rem; /* 16px (como en login) */
+  box-sizing: border-box; 
+  color: var(--color-texto);
+  font-weight: 400; /* Regular */
+}
+
+.form-group input[type="text"]::placeholder {
+  font-family: 'Lexend', sans-serif;
+  font-weight: 500;
+  font-size: 1.8rem; /* 18px (como en register) */
+  color: #72767A;
+}
+
+.form-group input[type="text"]:focus,
+.form-group select:focus {
+  outline: none;
+  border-color: var(--color-azul);
+  box-shadow: 0 0 0 3px rgba(0, 86, 172, 0.2);
+}
+
+.modal-footer {
+  margin-top: 2rem; 
+  text-align: center;
+}
+
+.btn-submit {
+  width: 60%;
+  height: 4rem; /* 40px (como en register) */
+  font-size: 2.0rem; /* 20px (como en forgot-password) */
+  font-weight: 500; /* Medium */
+  background-color: var(--color-azul);
+  color: var(--color-blanco);
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  font-family: 'Lexend', sans-serif;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.btn-submit:hover {
+  background-color: #004386; /* Más oscuro (como en login) */
+}
+
+.btn-submit:disabled {
+  background-color: #aeb8c2;
+  cursor: not-allowed;
+}
+
+/* --- Estilos de Error (como en register.css) --- */
+.error-message {
+  color: var(--color-rojo);
+  font-size: 1.4rem; /* 14px */
+  font-weight: 500;
+  margin-top: 1rem;
+}
+
+.error-text {
+  color: var(--color-rojo);
+  font-size: 1.4rem; /* 14px */
+  font-weight: 400; 
+  margin-top: 0.4rem; /* 4px */
+}

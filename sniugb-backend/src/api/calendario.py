@@ -169,3 +169,28 @@ async def delete_recordatorio(
     db.delete(recordatorio)
     db.commit()
     return None
+
+from pydantic import BaseModel
+class RecordatorioPatchState(BaseModel):
+    es_completado: bool
+
+@calendario_router.patch("/recordatorios/{recordatorio_id}", response_model=EventoResponseSchema)
+async def patch_recordatorio_estado(
+    recordatorio_id: int,
+    body: RecordatorioPatchState,
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(get_current_user)
+):
+    recordatorio = db.query(Evento).filter(
+        Evento.id == recordatorio_id,
+        Evento.usuario_dni == current_user.numero_de_dni,
+        Evento.tipo == TipoEvento.RECORDATORIO
+    ).first()
+
+    if not recordatorio:
+        raise HTTPException(status_code=404, detail="Recordatorio no encontrado o no es editable.")
+
+    recordatorio.es_completado = bool(body.es_completado)
+    db.commit()
+    db.refresh(recordatorio)
+    return format_evento_response(recordatorio, date.today())

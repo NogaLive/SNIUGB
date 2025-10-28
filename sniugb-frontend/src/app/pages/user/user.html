@@ -1,4 +1,235 @@
-<div class="dashboard-container">
-  <h1>Panel de Ganadero</h1>
-  <p>¡Bienvenido! Desde aquí podrás gestionar tus predios y animales.</p>
+<app-predio-modal 
+  *ngIf="mostrarModalCrearPredio" 
+  (predioCreado)="onPredioCreado($event)">
+</app-predio-modal>
+
+<div class="dashboard-wrapper" *ngIf="!mostrarModalCrearPredio">
+
+  <aside class="dashboard-sidebar">
+    
+    <div class="card card-sticky">
+      <div class="card-header">
+        <h3>Centro de Actividades</h3>
+        <div class="tabs">
+          <button 
+            class="tab-btn" 
+            [class.active]="activeTab === 'notificaciones'" 
+            (click)="seleccionarTab('notificaciones')">
+            Notificaciones
+          </button>
+          <button 
+            class="tab-btn" 
+            [class.active]="activeTab === 'recordatorios'" 
+            (click)="seleccionarTab('recordatorios')">
+            Recordatorios
+          </button>
+        </div>
+      </div>
+      
+      <div class="card-body-scrollable">
+        <div *ngIf="activeTab === 'notificaciones'">
+          <ul class="activity-list" *ngIf="notificaciones.length > 0; else noNotificaciones">
+            <li *ngFor="let notif of notificaciones" [class.leida]="notif.leida" (click)="marcarNotificacionLeida(notif)">
+              <div class="activity-icon icon-notif">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.017 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" /></svg>
+              </div>
+              <div class="activity-content">
+                <p>{{ notif.mensaje }}</p>
+                <span class="activity-time">{{ notif.fecha_creacion | date:'dd/MM/yy, h:mm a' }}</span>
+              </div>
+            </li>
+          </ul>
+          <ng-template #noNotificaciones>
+            <p class="empty-state">Sin notificaciones nuevas.</p>
+          </ng-template>
+        </div>
+        
+        <div *ngIf="activeTab === 'recordatorios'">
+          <ul class="activity-list" *ngIf="recordatoriosActivos.length > 0; else noRecordatorios">
+            <li *ngFor="let item of recordatoriosActivos" class="recordatorio-item">
+              <input 
+                type="checkbox" 
+                [id]="'check-' + item.id" 
+                [checked]="item.es_completado"
+                (change)="toggleRecordatorio(item)">
+              <label [for]="'check-' + item.id" [class.completado]="item.es_completado">
+                <p>{{ item.titulo }}</p>
+                <span class="activity-time">Vence: {{ item.fecha_evento | date:'dd/MM/yy' }}</span>
+              </label>
+            </li>
+          </ul>
+          <ng-template #noRecordatorios>
+            <p class="empty-state">No tienes recordatorios pendientes.</p>
+          </ng-template>
+        </div>
+      </div>
+    </div>
+
+    <div class="card card-sticky calendar-widget">
+      
+      <div class="calendar-header-custom">
+        <h2>{{ calendarViewDate | date:'LLLL yyyy' | titlecase }}</h2>
+        <div class="cal-nav">
+          <button class="cal-nav-btn" (click)="cambiarMes(-1)" aria-label="Mes anterior">&lt;</button>
+          <button class="cal-nav-btn" (click)="cambiarMes(1)" aria-label="Mes siguiente">&gt;</button>
+        </div>
+      </div>
+      <div class="card-body calendar-container">
+        <mwl-calendar-month-view
+          [viewDate]="calendarViewDate"
+          [events]="calendarEvents"
+          [locale]="locale"
+          [weekStartsOn]="1"
+          [cellTemplate]="customCellTemplate" 
+        >
+        </mwl-calendar-month-view>
+      </div>
+    </div>
+  </aside>
+
+  <main class="dashboard-main">
+    
+    <section class="predio-selector-wrapper">
+      <label for="predio-select">Viendo datos del predio:</label>
+      <select id="predio-select" [(ngModel)]="predioActivoCodigo" (ngModelChange)="onPredioChange()">
+        <option *ngIf="!predioActivoCodigo && isLoading" value="" disabled>Cargando predios...</option>
+        <option *ngFor="let predio of listaDePredios" [value]="predio.codigo_predio">
+          {{ predio.nombre_predio }} ({{ predio.codigo_predio }})
+        </option>
+        <option value="CREAR_NUEVO" class="option-crear-nuevo">
+          + Crear Nuevo Predio...
+        </option>
+      </select>
+    </section>
+
+    <section class="kpi-grid">
+      <ng-container *ngIf="kpis; else kpiLoader">
+        <div class="kpi-card kpi-hato">
+          <span class="kpi-label">Total Hato</span>
+          <span class="kpi-value">{{ kpis.total_hato }}</span>
+        </div>
+        <div class="kpi-card kpi-alertas" [class.kpi-alerta]="kpis.alertas_salud > 0">
+          <span class="kpi-label">Alertas de Salud</span>
+          <span class="kpi-value">{{ kpis.alertas_salud }}</span>
+        </div>
+        <div class="kpi-card kpi-tareas">
+          <span class="kpi-label">Tareas para Hoy</span>
+          <span class="kpi-value">{{ kpis.tareas_para_hoy }}</span>
+        </div>
+        <div class="kpi-card kpi-produccion kpi-interactive" (click)="onKpiProduccionClick()">
+          <span class="kpi-label">Producción ({{ periodoKpiLabel }})</span>
+          <span class="kpi-value">{{ kpis.produccion_reciente_leche }} Lts</span>
+          <span class="kpi-subvalue">{{ kpis.produccion_reciente_carne }} Kg</span>
+        </div>
+        <div class="kpi-card kpi-transfer">
+          <span class="kpi-label">Transferencias</span>
+          <span class="kpi-value">{{ kpis.solicitudes_transferencia }}</span>
+        </div>
+      </ng-container>
+      <ng-template #kpiLoader>
+        <div class="kpi-card skeleton" *ngFor="let i of [1,2,3,4,5]"></div>
+      </ng-template>
+    </section>
+
+    <section class="control-panel">
+      <h3>Panel de Control</h3>
+      <div class="control-buttons">
+        <button class="control-btn">
+          <img src="assets/user/lens_icono.svg" alt="Buscar">
+          <span>Buscar Registro</span>
+        </button>
+        <button class="control-btn">
+          <img src="assets/user/plus_icono.svg" alt="Agregar">
+          <span>Agregar Ganado</span>
+        </button>
+        <button class="control-btn">
+          <img src="assets/user/transfer_icono.svg" alt="Transferir">
+          <span>Transferencias</span>
+        </button>
+        <button class="control-btn">
+          <img src="assets/user/reports_icono.svg" alt="Reportes">
+          <span>Reportes</span>
+        </button>
+        <button class="control-btn">
+          <img src="assets/user/inventory_icono.svg" alt="Inventario">
+          <span>Inventario</span>
+        </button>
+      </div>
+    </section>
+
+    <section class="card hato-table-wrapper">
+      <div class="card-header">
+        <h3>Mi Hato (Últimos Registros)</h3>
+      </div>
+      <div class="card-body table-container" *ngIf="animalesHato.length > 0; else noAnimales">
+        <table>
+          <thead>
+            <tr>
+              <th>CUI</th>
+              <th>Nombre</th>
+              <th>Raza</th>
+              <th>Sexo</th>
+              <th>Nacimiento</th>
+              <th>Salud</th>
+              <th>Estado</th>
+              <th>Acción</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let animal of animalesHato">
+              <td class="td-cui">{{ animal.cui }}</td>
+              <td>{{ animal.nombre }}</td>
+              <td>{{ animal.raza.nombre }}</td>
+              <td>{{ animal.sexo }}</td>
+              <td>{{ animal.fecha_nacimiento | date:'dd/MM/yyyy' }}</td>
+              <td>
+                <span class="status-badge" [ngClass]="getCondicionClass(animal.condicion_salud)">
+                  {{ animal.condicion_salud }}
+                </span>
+              </td>
+              <td>
+                <span class="status-badge status-{{ animal.estado }}">
+                  {{ animal.estado | titlecase }}
+                </span>
+              </td>
+              <td>
+                <button class="btn-ver-registro" [routerLink]="['/user/animal', animal.cui]">
+                  Ver Ficha
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <ng-template #noAnimales>
+        <div class="card-body">
+          <p class="empty-state">No se encontraron animales activos en este predio.</p>
+        </div>
+      </ng-template>
+    </section>
+
+  </main>
 </div>
+
+
+<ng-template #customCellTemplate let-day="day" let-locale="locale">
+  <div class="cal-cell-top">
+    <button 
+      type="button"
+      class="cal-day-number"
+      (click)="onDayClicked(day.date)"
+      [class.cal-day-disabled]="day.isPast || day.isFuture"
+      [class.cal-today]="day.isToday">
+      {{ day.date | calendarDate:'monthViewDayNumber':locale }}
+    </button>
+  </div>
+  <div class="cal-events-container" *ngIf="day.events.length > 0">
+    <div class="cal-events">
+      <div 
+        class="cal-event" 
+        *ngFor="let event of day.events | slice:0:3" 
+        [style.backgroundColor]="$any(event).color?.primary">
+      </div>
+    </div>
+  </div>
+</ng-template>

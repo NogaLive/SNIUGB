@@ -1,3 +1,4 @@
+import bleach
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import desc
@@ -81,10 +82,13 @@ def get_articulo_by_slug(articulo_slug: str, db: Session = Depends(get_db)):
     
     if not articulo:
         raise HTTPException(status_code=404, detail="Artículo no encontrado.")
-    
     # Incrementar el contador de vistas
     articulo.vistas += 1
     db.commit()
     db.refresh(articulo)
-    
+    # Sanitizar HTML
+    try:
+        articulo.contenido_html = bleach.clean(articulo.contenido_html, tags=bleach.sanitizer.ALLOWED_TAGS.union({'p','img','h1','h2','h3','ul','ol','li','strong','em','a','blockquote','code','pre'}), attributes={'a':['href','title','target','rel'],'img':['src','alt','title']}, strip=True)
+    except Exception:
+        pass
     return articulo

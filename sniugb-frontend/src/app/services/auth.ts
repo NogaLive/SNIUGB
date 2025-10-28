@@ -1,30 +1,21 @@
 import { Injectable } from '@angular/core';
-
-// --- AÑADIDO: Se importa BehaviorSubject ---
 import { BehaviorSubject } from 'rxjs';
 
 @Injectable({
   providedIn: 'root'
 })
 export class AuthService {
-  // Asegúrate de que esta cadena sea EXACTAMENTE igual a la de localStorage.
   private readonly TOKEN_KEY = 'sniugb_auth_token'; 
   private readonly ROLE_KEY = 'sniugb_user_role';
 
-  // --- LÓGICA DE ESTADO REACTIVO ---
-  // 1. Se crea un BehaviorSubject que guarda el estado de autenticación actual (true/false).
-  //    Comienza con el valor que ya exista en localStorage.
   private authState = new BehaviorSubject<boolean>(this.estaAutenticado());
-
-  // 2. Se expone como un observable público. Cualquier componente puede "escuchar" los cambios.
   public authState$ = this.authState.asObservable();
 
   constructor() { }
 
-  // 3. Se modifican los métodos para que NOTIFIQUEN a los suscriptores de los cambios.
   guardarToken(token: string): void {
     localStorage.setItem(this.TOKEN_KEY, token);
-    this.authState.next(true); // Notifica que el usuario ahora está logueado.
+    this.authState.next(true); 
   }
 
   guardarRol(rol: string): void {
@@ -34,10 +25,9 @@ export class AuthService {
   logout(): void {
     localStorage.removeItem(this.TOKEN_KEY);
     localStorage.removeItem(this.ROLE_KEY);
-    this.authState.next(false); // Notifica que el usuario ya NO está logueado.
+    this.authState.next(false); 
   }
   
-  // --- MÉTODOS EXISTENTES (se mantienen) ---
   obtenerToken(): string | null {
     return localStorage.getItem(this.TOKEN_KEY);
   }
@@ -49,4 +39,23 @@ export class AuthService {
   estaAutenticado(): boolean {
     return !!this.obtenerToken(); 
   }
-}
+
+  // --- ¡AQUÍ ESTÁ EL MÉTODO AÑADIDO! ---
+  getUserName(): string | null {
+    const token = this.obtenerToken();
+    if (!token) {
+      return null;
+    }
+
+    try {
+      // Decodifica la parte del payload (el segundo segmento del JWT)
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      // Asumiendo que guardaste el nombre en el payload como 'nombre_completo'
+      return payload.nombre_completo || payload.sub; 
+    } catch (e) {
+      console.error('Error al decodificar el token:', e);
+      return null;
+    }
+  }
+  
+} 

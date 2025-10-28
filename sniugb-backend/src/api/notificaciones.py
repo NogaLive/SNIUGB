@@ -62,11 +62,6 @@ async def get_notificacion_detail(
         raise HTTPException(status_code=404, detail="Notificación no encontrada.")
 
     # Si la notificación no estaba leída, la marcamos como leída
-    if not notificacion.leida:
-        notificacion.leida = True
-        db.commit()
-        db.refresh(notificacion)
-    
     response_data = NotificacionDetailResponseSchema.model_validate(notificacion)
     
     # Si la notificación está relacionada con una transferencia, adjuntamos los detalles
@@ -80,3 +75,21 @@ async def get_notificacion_detail(
             pass
 
     return response_data
+
+@notificaciones_router.patch("/{notificacion_id}", response_model=NotificacionDetailResponseSchema)
+async def marcar_notificacion_leida(
+    notificacion_id: int,
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(get_current_user)
+):
+    notificacion = db.query(Notificacion).filter(
+        Notificacion.id == notificacion_id,
+        Notificacion.usuario_dni == current_user.numero_de_dni
+    ).first()
+    if not notificacion:
+        raise HTTPException(status_code=404, detail="Notificación no encontrada.")
+    if not notificacion.leida:
+        notificacion.leida = True
+        db.commit()
+        db.refresh(notificacion)
+    return NotificacionDetailResponseSchema.model_validate(notificacion)
