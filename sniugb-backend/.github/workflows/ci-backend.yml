@@ -1,0 +1,89 @@
+name: Backend CI
+
+on:
+  push:
+    paths:
+      - 'sniugb-backend/**'
+  pull_request:
+    paths:
+      - 'sniugb-backend/**'
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        ports: ['5432:5432']
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: sniugb_test
+        options: >-
+          --health-cmd "pg_isready -U postgres -d sniugb_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      # Ajusta si tu app lee estas variables (tu backend lo hace)
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_HOST: localhost
+      DB_PORT: '5432'
+      DB_NAME: sniugb_test
+      DB_SSLMODE: disable
+      JWT_SECRET: test-secret
+      CORS_ORIGINS: http://localhost:4200
+      # Evitar llamadas reales a servicios externos en CI
+      SENDGRID_API_KEY: dummy
+      FROM_EMAIL: noreply@sniugb.local
+      WHATSAPP_API_TOKEN: dummy
+      WHATSAPP_PHONE_NUMBER_ID: dummy
+      VERIFY_TOKEN: dummy
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('sniugb-backend/requirements.txt') }}
+
+      - name: Install deps
+        working-directory: sniugb-backend
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      # Si usas Alembic, quita el comentario
+      - name: Run migrations (alembic)
+        if: ${{ hashFiles('sniugb-backend/alembic.ini') != '' }}
+        working-directory: sniugb-backend
+        run: |
+          alembic upgrade head
+
+      # Si tienes tests, quita el comentario y añade pytest al requirements
+      #- name: Run tests
+      #  working-directory: sniugb-backend
+      #  run: pytest -q
+
+      - name: Smoke start (import server)
+        working-directory: sniugb-backend
+        run: |
+          python - <<'PY'
+          import importlib
+          import sys
+          sys.path.append('.')
+          importlib.import_module('server')
+          print("Server imported OK")
+          PY

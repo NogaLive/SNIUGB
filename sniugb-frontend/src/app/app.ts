@@ -9,9 +9,9 @@ import { FooterComponent } from './components/footer/footer';
 
 import { ModalService } from './services/modal.service';
 import { ModalComponent } from './components/modal/modal';
-import { LoginComponent } from './pages/login/login';
-import { RegisterComponent } from './pages/register/register';
-import { ForgotPasswordComponent } from './pages/forgot-password/forgot-password';
+import { LoginComponent } from './features/auth/login/login';
+import { RegisterComponent } from './features/auth/register/register';
+import { ForgotPasswordComponent } from './features/auth/forgot-password/forgot-password';
 
 @Component({
   selector: 'app-root',

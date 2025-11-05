@@ -2,8 +2,8 @@ import { Component } from '@angular/core';
 import { CommonModule, NgClass } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 // CORRECCIÓN: Se importan los nuevos tipos de request
-import { ApiService, ForgotPasswordRequest, VerifyCodeRequest, ResetPasswordRequest } from '../../services/api';
-import { ModalService } from '../../services/modal.service';
+import { ApiService, ForgotPasswordRequest, VerifyCodeRequest, ResetPasswordRequest } from '../../../services/api';
+import { ModalService } from '../../../services/modal.service';
 
 @Component({
   selector: 'app-forgot-password',

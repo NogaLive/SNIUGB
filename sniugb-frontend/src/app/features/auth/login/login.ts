@@ -2,16 +2,16 @@ import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { ApiService } from '../../services/api';
-import { AuthService } from '../../services/auth';
-import { ModalService } from '../../services/modal.service';
+import { ApiService } from '../../../services/api';
+import { ModalService } from '../../../services/modal.service';
+import { AuthStore } from '../../../components/stores/auth.store';
 
 @Component({
   selector: 'app-login',
   standalone: true,
   imports: [CommonModule, FormsModule],
   templateUrl: './login.html',
-  styleUrls: ['./login.css'] 
+  styleUrls: ['./login.css']
 })
 export class LoginComponent {
   dni: string = '';
@@ -26,17 +26,15 @@ export class LoginComponent {
 
   constructor(
     private apiService: ApiService,
-    private authService: AuthService,
     private router: Router,
-    private modalService: ModalService
+    private modalService: ModalService,
+    private authStore: AuthStore
   ) {}
 
   openForgotPassword(): void {
-    // Cierra el modal de login y abre el de recuperar contraseña
     this.modalService.openForgotPassword();
   }
 
-  // Se mantiene tu función para limpiar los errores visuales cuando el usuario escribe.
   resetErrors(): void {
     if (this.dniError || this.contrasenaError) {
       this.dniPlaceholder = 'DNI';
@@ -51,12 +49,9 @@ export class LoginComponent {
   }
 
   ingresar(): void {
-    // 1. Se resetean los errores visuales de un intento anterior.
     this.resetErrors();
 
     let validationFailed = false;
-
-    // 2. Se restaura tu validación de campos vacíos. Esto es crucial.
     if (!this.dni) {
       this.dniPlaceholder = 'Ingrese DNI';
       this.dniError = true;
@@ -67,29 +62,24 @@ export class LoginComponent {
       this.contrasenaError = true;
       validationFailed = true;
     }
-    if (validationFailed) {
-      return; // Detiene la ejecución si hay campos vacíos.
-    }
+    if (validationFailed) return;
 
-    // 3. Si todo está bien, se procede con la llamada a la API.
     this.apiService.login(this.dni, this.contrasena).subscribe({
       next: (response) => {
-        // Se guarda el token y el rol
-        this.authService.guardarToken(response.access_token);
-        this.authService.guardarRol(response.rol);
-        
+        // Guardar token + rol en AuthStore (lo mismo que lee el interceptor)
+        const role = (response.rol || 'ganadero') as 'admin' | 'ganadero';
+        this.authStore.setSession(response.access_token, role);
+
         this.modalService.closeAll();
 
-        // --- LÓGICA DE REDIRECCIÓN POR ROL ---
-        if (response.rol === 'admin') {
-          this.router.navigate(['/admin']); // Redirige al home del admin
+        if (role === 'admin') {
+          this.router.navigate(['/admin']);
         } else {
-          this.router.navigate(['/user']); // Redirige al home del ganadero
+          this.router.navigate(['/user']);
         }
       },
       error: (err) => {
         console.error('Error de autenticación:', err);
-        // Tu lógica de error para credenciales incorrectas se mantiene.
         this.dniPlaceholder = 'Datos incorrectos';
         this.contrasenaPlaceholder = 'Datos incorrectos';
         this.dniError = true;

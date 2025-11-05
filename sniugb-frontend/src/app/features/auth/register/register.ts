@@ -3,8 +3,8 @@ import { CommonModule, NgClass } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 
 // Se importan los servicios y tipos necesarios
-import { ApiService, UserRegisterData } from '../../services/api';
-import { ModalService } from '../../services/modal.service';
+import { ApiService, UserRegisterData } from '../../../services/api';
+import { ModalService } from '../../../services/modal.service';
 
 @Component({
   selector: 'app-register',

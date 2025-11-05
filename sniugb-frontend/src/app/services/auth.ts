@@ -1,61 +1,57 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
 
-@Injectable({
-  providedIn: 'root'
-})
+@Injectable({ providedIn: 'root' })
 export class AuthService {
-  private readonly TOKEN_KEY = 'sniugb_auth_token'; 
-  private readonly ROLE_KEY = 'sniugb_user_role';
+  private readonly TOKEN_KEYS = ['access_token', 'sniugb_auth_token'];
+  private readonly ROLE_KEYS  = ['role', 'sniugb_user_role'];
 
   private authState = new BehaviorSubject<boolean>(this.estaAutenticado());
   public authState$ = this.authState.asObservable();
 
-  constructor() { }
+  private writeAll(keys: string[], val: string) {
+    keys.forEach(k => localStorage.setItem(k, val));
+  }
+  private readFirst(keys: string[]) {
+    for (const k of keys) {
+      const v = localStorage.getItem(k);
+      if (v) return v;
+    }
+    return null;
+  }
+  private removeAll(keys: string[]) {
+    keys.forEach(k => localStorage.removeItem(k));
+  }
 
   guardarToken(token: string): void {
-    localStorage.setItem(this.TOKEN_KEY, token);
-    this.authState.next(true); 
+    this.writeAll(this.TOKEN_KEYS, token);
+    this.authState.next(true);
   }
-
   guardarRol(rol: string): void {
-    localStorage.setItem(this.ROLE_KEY, rol);
+    this.writeAll(this.ROLE_KEYS, rol);
   }
-
   logout(): void {
-    localStorage.removeItem(this.TOKEN_KEY);
-    localStorage.removeItem(this.ROLE_KEY);
-    this.authState.next(false); 
+    this.removeAll(this.TOKEN_KEYS);
+    this.removeAll(this.ROLE_KEYS);
+    this.authState.next(false);
   }
-  
   obtenerToken(): string | null {
-    return localStorage.getItem(this.TOKEN_KEY);
+    return this.readFirst(this.TOKEN_KEYS);
   }
-
   obtenerRol(): string | null {
-    return localStorage.getItem(this.ROLE_KEY);
+    return this.readFirst(this.ROLE_KEYS);
   }
-
   estaAutenticado(): boolean {
-    return !!this.obtenerToken(); 
+    return !!this.obtenerToken();
   }
-
-  // --- ¡AQUÍ ESTÁ EL MÉTODO AÑADIDO! ---
   getUserName(): string | null {
     const token = this.obtenerToken();
-    if (!token) {
-      return null;
-    }
-
+    if (!token) return null;
     try {
-      // Decodifica la parte del payload (el segundo segmento del JWT)
       const payload = JSON.parse(atob(token.split('.')[1]));
-      // Asumiendo que guardaste el nombre en el payload como 'nombre_completo'
-      return payload.nombre_completo || payload.sub; 
-    } catch (e) {
-      console.error('Error al decodificar el token:', e);
+      return payload.nombre_completo || payload.sub || null;
+    } catch {
       return null;
     }
   }
-  
-} 
+}

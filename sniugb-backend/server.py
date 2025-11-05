@@ -1,11 +1,12 @@
 from contextlib import asynccontextmanager
 import os
 import logging
+from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-
+from fastapi.responses import JSONResponse, FileResponse
 
 # Observabilidad / seguridad
 import structlog
@@ -16,8 +17,6 @@ from prometheus_fastapi_instrumentator import Instrumentator
 from src.utils.limiter import limiter
 from slowapi.middleware import SlowAPIMiddleware
 from slowapi.errors import RateLimitExceeded
-from fastapi.responses import JSONResponse, FileResponse
-from pathlib import Path
 
 # Handlers de error uniformes
 from src.utils import error_handler
@@ -45,18 +44,10 @@ from src.jobs.scheduler import scheduler, setup_jobs
 # =========================
 # Configuración base
 # =========================
-
-FAVICON_PATH = Path(os.getenv("STATIC_DIR", "static/ico")) / "Logo_gob.ico"
-
-if FAVICON_PATH.exists():
-    @app.get("/Logo_gob.ico", include_in_schema=False)
-    async def favicon():
-        resp = FileResponse(FAVICON_PATH, media_type="image/x-icon")
-        resp.headers["Cache-Control"] = "public, max-age=86400"
-        return resp
-
 API_PREFIX = "/api/v1"
 ALLOWED_ORIGINS = [o.strip() for o in os.getenv("CORS_ORIGINS", "http://localhost:4200").split(",")]
+STATIC_DIR = Path(os.getenv("STATIC_DIR", "static"))
+FAVICON_PATH = STATIC_DIR / "ico" / "Logo_gob.ico"
 
 def setup_logging() -> None:
     structlog.configure(
@@ -122,7 +113,16 @@ app.add_middleware(
 )
 
 # Static (si lo usas)
-app.mount("/static", StaticFiles(directory="static"), name="static")
+if STATIC_DIR.exists():
+    app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
+
+# Favicon (definir DESPUÉS de crear app)
+if FAVICON_PATH.exists():
+    @app.get("/Logo_gob.ico", include_in_schema=False)
+    async def favicon():
+        resp = FileResponse(str(FAVICON_PATH), media_type="image/x-icon")
+        resp.headers["Cache-Control"] = "public, max-age=86400"
+        return resp
 
 # Routers (versionados)
 app.include_router(auth_router,           prefix=API_PREFIX)

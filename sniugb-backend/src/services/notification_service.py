@@ -4,66 +4,95 @@ from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
 from typing import List
 from src.models.database_models import Animal
-
 from dotenv import load_dotenv
 
 load_dotenv()
 
-def send_reset_code_by_email(to_email: str, code: str):
+def send_reset_code_by_email(to_email: str, code: str) -> bool:
+    api_key = os.getenv("SENDGRID_API_KEY")
+    from_email = os.getenv("FROM_EMAIL")
+    if not api_key or not from_email:
+        print("Falta SENDGRID_API_KEY o FROM_EMAIL")
+        return False
+
     message = Mail(
-        from_email=os.getenv("FROM_EMAIL"),
+        from_email=from_email,
         to_emails=to_email,
         subject='Tu Código de Recuperación de Contraseña SNIUGB',
-        html_content=f'Hola,<br><br>Tu código para restablecer tu contraseña es: <strong>{code}</strong><br><br>Este código expirará en 10 minutos.'
+        html_content=(
+            'Hola,<br><br>'
+            f'Tu código para restablecer tu contraseña es: <strong>{code}</strong><br><br>'
+            'Este código expirará en 10 minutos.'
+        )
     )
     try:
-        sg = SendGridAPIClient(os.getenv("SENDGRID_API_KEY"))
-        response = sg.send(message)
-        print(f"Correo de reseteo enviado a {to_email}, Status Code: {response.status_code}")
-        return True
+        sg = SendGridAPIClient(api_key)
+        resp = sg.send(message)
+        ok = resp.status_code in (200, 202)
+        if not ok:
+            print(f"SendGrid no aceptó el envío: {resp.status_code} {getattr(resp, 'body', '')}")
+        else:
+            print(f"Correo de reseteo aceptado por SendGrid ({resp.status_code}) para {to_email}")
+        return ok
     except Exception as e:
         print(f"Error al enviar email de reseteo: {e}")
         return False
 
-def send_reset_code_by_whatsapp(to_phone: str, code: str):
-    whatsapp_token = os.getenv("WHATSAPP_TOKEN")
+
+def send_reset_code_by_whatsapp(to_phone: str, code: str) -> bool:
+    # Acepta ambos nombres de variable para compatibilidad
+    whatsapp_token = os.getenv("WHATSAPP_TOKEN") or os.getenv("WHATSAPP_API_TOKEN")
     phone_number_id = os.getenv("WHATSAPP_PHONE_NUMBER_ID")
     if not whatsapp_token or not phone_number_id:
+        print("Falta WHATSAPP_TOKEN/WHATSAPP_API_TOKEN o WHATSAPP_PHONE_NUMBER_ID")
         return False
 
-    if to_phone.startswith('+'):
-        formatted_to_phone = to_phone[1:]
-    else:
-        formatted_to_phone = to_phone
-        
+    formatted_to_phone = to_phone[1:] if to_phone.startswith('+') else to_phone
     api_url = f"https://graph.facebook.com/v18.0/{phone_number_id}/messages"
     headers = {"Authorization": f"Bearer {whatsapp_token}", "Content-Type": "application/json"}
-    
+
     payload = {
-        "messaging_product": "whatsapp", "to": formatted_to_phone, "type": "template",
+        "messaging_product": "whatsapp",
+        "to": formatted_to_phone,
+        "type": "template",
         "template": {
-            "name": "password_reset_code", "language": { "code": "es" },
-            "components": [{"type": "body", "parameters": [{"type": "text", "text": code}]}]
+            "name": "password_reset_code",
+            "language": { "code": "es" },
+            "components": [
+                {
+                    "type": "body",
+                    "parameters": [
+                        {"type": "text", "text": code}
+                    ]
+                }
+            ]
         }
     }
     try:
-        response = requests.post(api_url, headers=headers, json=payload)
-        response.raise_for_status()
-        print(f"Mensaje de reseteo de WhatsApp enviado a {formatted_to_phone}.")
+        r = requests.post(api_url, headers=headers, json=payload)
+        r.raise_for_status()
+        print(f"WhatsApp reset enviado a {formatted_to_phone}")
         return True
     except requests.exceptions.RequestException as e:
-        print(f"Error al enviar mensaje de reseteo de WhatsApp: {e.response.text if e.response else e}")
+        print(f"Error WhatsApp reset: {e.response.text if e.response else e}")
         return False
 
-def send_transfer_request_email(to_email: str, solicitante_nombre: str, codigo: str, animales: List[Animal]):
-    """Envía un correo notificando una nueva solicitud con la lista de animales."""
+
+def send_transfer_request_email(to_email: str, solicitante_nombre: str, codigo: str, animales: List[Animal]) -> bool:
     animal_list_html = "<ul>"
     for animal in animales:
-        animal_list_html += f"<li><b>{animal.nombre}</b> (CUI: ...{animal.cui[-4:]})</li>"
+        cui_tail = animal.cui[-4:] if getattr(animal, "cui", None) else "----"
+        animal_list_html += f"<li><b>{animal.nombre}</b> (CUI: ...{cui_tail})</li>"
     animal_list_html += "</ul>"
-    
+
+    api_key = os.getenv("SENDGRID_API_KEY")
+    from_email = os.getenv("FROM_EMAIL")
+    if not api_key or not from_email:
+        print("Falta SENDGRID_API_KEY o FROM_EMAIL")
+        return False
+
     message = Mail(
-        from_email=os.getenv("FROM_EMAIL"),
+        from_email=from_email,
         to_emails=to_email,
         subject='[SNIUGB] Tienes una nueva solicitud de transferencia',
         html_content=f'''
@@ -79,33 +108,36 @@ def send_transfer_request_email(to_email: str, solicitante_nombre: str, codigo: 
         '''
     )
     try:
-        sg = SendGridAPIClient(os.getenv("SENDGRID_API_KEY"))
-        response = sg.send(message)
-        print(f"Correo de transferencia enviado a {to_email}, Status Code: {response.status_code}")
-        return True
+        sg = SendGridAPIClient(api_key)
+        resp = sg.send(message)
+        ok = resp.status_code in (200, 202)
+        if not ok:
+            print(f"SendGrid no aceptó el envío: {resp.status_code} {getattr(resp, 'body', '')}")
+        else:
+            print(f"Correo de transferencia aceptado por SendGrid ({resp.status_code}) para {to_email}")
+        return ok
     except Exception as e:
         print(f"Error al enviar email de transferencia: {e}")
         return False
 
-def send_transfer_request_whatsapp(to_phone: str, solicitante_nombre: str, codigo: str, animales: List[Animal]):
-    """Envía un mensaje de WhatsApp notificando una nueva solicitud de transferencia."""
-    whatsapp_token = os.getenv("WHATSAPP_TOKEN")
+
+def send_transfer_request_whatsapp(to_phone: str, solicitante_nombre: str, codigo: str, animales: List[Animal]) -> bool:
+    whatsapp_token = os.getenv("WHATSAPP_TOKEN") or os.getenv("WHATSAPP_API_TOKEN")
     phone_number_id = os.getenv("WHATSAPP_PHONE_NUMBER_ID")
     if not whatsapp_token or not phone_number_id:
+        print("Falta WHATSAPP_TOKEN/WHATSAPP_API_TOKEN o WHATSAPP_PHONE_NUMBER_ID")
         return False
 
-    if to_phone.startswith('+'):
-        formatted_to_phone = to_phone[1:]
-    else:
-        formatted_to_phone = to_phone
+    formatted_to_phone = to_phone[1:] if to_phone.startswith('+') else to_phone
+    nombres_animales = ", ".join([animal.nombre for animal in animales]) if animales else "N/A"
 
-    nombres_animales = ", ".join([animal.nombre for animal in animales])
-    
     api_url = f"https://graph.facebook.com/v18.0/{phone_number_id}/messages"
     headers = {"Authorization": f"Bearer {whatsapp_token}", "Content-Type": "application/json"}
-    
+
     payload = {
-        "messaging_product": "whatsapp", "to": formatted_to_phone, "type": "template",
+        "messaging_product": "whatsapp",
+        "to": formatted_to_phone,
+        "type": "template",
         "template": {
             "name": "transfer_request",
             "language": { "code": "es" },
@@ -128,26 +160,30 @@ def send_transfer_request_whatsapp(to_phone: str, solicitante_nombre: str, codig
         }
     }
     try:
-        response = requests.post(api_url, headers=headers, json=payload)
-        response.raise_for_status()
+        r = requests.post(api_url, headers=headers, json=payload)
+        r.raise_for_status()
         print(f"Notificación de transferencia de WhatsApp enviada a {formatted_to_phone}.")
         return True
     except requests.exceptions.RequestException as e:
         print(f"Error al enviar notificación de transferencia de WhatsApp: {e.response.text if e.response else e}")
         return False
-    
+
+
 def send_new_support_ticket_notification(
-    admin_email: str, 
-    user_name: str, 
-    user_dni: str, 
-    ticket_category: str, 
+    admin_email: str,
+    user_name: str,
+    user_dni: str,
+    ticket_category: str,
     ticket_message: str
-):
-    """
-    Envía un correo al administrador notificando un nuevo ticket de soporte.
-    """
+) -> bool:
+    api_key = os.getenv("SENDGRID_API_KEY")
+    from_email = os.getenv("FROM_EMAIL")
+    if not api_key or not from_email:
+        print("Falta SENDGRID_API_KEY o FROM_EMAIL")
+        return False
+
     message = Mail(
-        from_email=os.getenv("FROM_EMAIL"),
+        from_email=from_email,
         to_emails=admin_email,
         subject=f'[SNIUGB Soporte] Nuevo Ticket: {ticket_category}',
         html_content=f'''
@@ -160,10 +196,14 @@ def send_new_support_ticket_notification(
         '''
     )
     try:
-        sg = SendGridAPIClient(os.getenv("SENDGRID_API_KEY"))
-        response = sg.send(message)
-        print(f"Notificación de soporte enviada a {admin_email}, Status Code: {response.status_code}")
-        return True
+        sg = SendGridAPIClient(api_key)
+        resp = sg.send(message)
+        ok = resp.status_code in (200, 202)
+        if not ok:
+            print(f"SendGrid no aceptó el envío: {resp.status_code} {getattr(resp, 'body', '')}")
+        else:
+            print(f"Notificación de soporte aceptada por SendGrid ({resp.status_code}) para {admin_email}")
+        return ok
     except Exception as e:
         print(f"Error al enviar email de soporte: {e}")
         return False
