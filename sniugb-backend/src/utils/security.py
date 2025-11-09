@@ -30,7 +30,7 @@ def get_password_hash(password: str) -> str:
     return pwd_context.hash(password)
 
 # --- Creación de Tokens JWT ---
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/login")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
 
 def create_access_token(data: dict):
     to_encode = data.copy()

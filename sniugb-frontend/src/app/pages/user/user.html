@@ -6,7 +6,6 @@
 <div class="dashboard-wrapper" *ngIf="!mostrarModalCrearPredio">
 
   <aside class="dashboard-sidebar">
-    
     <div class="card card-sticky">
       <div class="card-header">
         <h3>Centro de Actividades</h3>
@@ -31,6 +30,7 @@
           <ul class="activity-list" *ngIf="notificaciones.length > 0; else noNotificaciones">
             <li *ngFor="let notif of notificaciones" [class.leida]="notif.leida" (click)="marcarNotificacionLeida(notif)">
               <div class="activity-icon icon-notif">
+                <!-- campana -->
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.017 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" /></svg>
               </div>
               <div class="activity-content">
@@ -66,7 +66,6 @@
     </div>
 
     <div class="card card-sticky calendar-widget">
-      
       <div class="calendar-header-custom">
         <h2>{{ calendarViewDate | date:'LLLL yyyy' | titlecase }}</h2>
         <div class="cal-nav">
@@ -74,21 +73,14 @@
           <button class="cal-nav-btn" (click)="cambiarMes(1)" aria-label="Mes siguiente">&gt;</button>
         </div>
       </div>
+
       <div class="card-body calendar-container">
-        <mwl-calendar-month-view
-          [viewDate]="calendarViewDate"
-          [events]="calendarEvents"
-          [locale]="locale"
-          [weekStartsOn]="1"
-          [cellTemplate]="customCellTemplate" 
-        >
-        </mwl-calendar-month-view>
+        <full-calendar [options]="calendarOptions"></full-calendar>
       </div>
     </div>
   </aside>
 
   <main class="dashboard-main">
-    
     <section class="predio-selector-wrapper">
       <label for="predio-select">Viendo datos del predio:</label>
       <select id="predio-select" [(ngModel)]="predioActivoCodigo" (ngModelChange)="onPredioChange()">
@@ -96,41 +88,45 @@
         <option *ngFor="let predio of listaDePredios" [value]="predio.codigo_predio">
           {{ predio.nombre_predio }} ({{ predio.codigo_predio }})
         </option>
-        <option value="CREAR_NUEVO" class="option-crear-nuevo">
-          + Crear Nuevo Predio...
-        </option>
+        <option value="CREAR_NUEVO" class="option-crear-nuevo">+ Crear Nuevo Predio...</option>
       </select>
     </section>
 
+    <!-- KPIs como botones -->
     <section class="kpi-grid">
       <ng-container *ngIf="kpis; else kpiLoader">
-        <div class="kpi-card kpi-hato">
+        <button class="kpi-card kpi-hato kpi-interactive" (click)="onKpiHatoClick()">
           <span class="kpi-label">Total Hato</span>
           <span class="kpi-value">{{ kpis.total_hato }}</span>
-        </div>
-        <div class="kpi-card kpi-alertas" [class.kpi-alerta]="kpis.alertas_salud > 0">
+        </button>
+
+        <button class="kpi-card kpi-alertas kpi-interactive" [class.kpi-alerta]="kpis.alertas_salud > 0" (click)="onKpiAlertasClick()">
           <span class="kpi-label">Alertas de Salud</span>
           <span class="kpi-value">{{ kpis.alertas_salud }}</span>
-        </div>
-        <div class="kpi-card kpi-tareas">
-          <span class="kpi-label">Tareas para Hoy</span>
+        </button>
+
+        <button class="kpi-card kpi-tareas kpi-interactive" (click)="onKpiTareasClick()">
+          <span class="kpi-label">Tareas ({{ periodoTareasLabel }})</span>
           <span class="kpi-value">{{ kpis.tareas_para_hoy }}</span>
-        </div>
-        <div class="kpi-card kpi-produccion kpi-interactive" (click)="onKpiProduccionClick()">
-          <span class="kpi-label">Producción ({{ periodoKpiLabel }})</span>
-          <span class="kpi-value">{{ kpis.produccion_reciente_leche }} Lts</span>
-          <span class="kpi-subvalue">{{ kpis.produccion_reciente_carne }} Kg</span>
-        </div>
-        <div class="kpi-card kpi-transfer">
+        </button>
+
+        <button class="kpi-card kpi-produccion kpi-interactive" (click)="onKpiProduccionKpiClick()">
+          <span class="kpi-label">Producción ({{ periodoProduccionLabel }})</span>
+          <span class="kpi-subvalue">{{ kpis.produccion_reciente_leche }} Lt Leche</span>
+          <span class="kpi-subvalue">{{ kpis.produccion_reciente_carne }} Kg Carne</span>
+        </button>
+
+        <button class="kpi-card kpi-transfer kpi-interactive" (click)="onKpiTransferenciasClick()">
           <span class="kpi-label">Transferencias</span>
           <span class="kpi-value">{{ kpis.solicitudes_transferencia }}</span>
-        </div>
+        </button>
       </ng-container>
       <ng-template #kpiLoader>
         <div class="kpi-card skeleton" *ngFor="let i of [1,2,3,4,5]"></div>
       </ng-template>
     </section>
 
+    <!-- Panel de Control -->
     <section class="control-panel">
       <h3>Panel de Control</h3>
       <div class="control-buttons">
@@ -157,79 +153,89 @@
       </div>
     </section>
 
-    <section class="card hato-table-wrapper">
-      <div class="card-header">
-        <h3>Mi Hato (Últimos Registros)</h3>
+    <!-- NUEVO: Panel de Gestión -->
+    <section class="gestion-panel">
+      <h3>Panel de Gestión</h3>
+      <div class="gestion-buttons">
+        <!-- 1) Eventos Sanitarios (masivo) -->
+        <button class="control-btn" (click)="goGestionSanitarioMasivo()">
+          <!-- cruz médica -->
+          <svg class="btn-ico" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
+            <path d="M12 4v16M4 12h16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+          </svg>
+          <span>Eventos Sanitarios</span>
+        </button>
+
+        <!-- 2) Control de Producción (masivo: leche/carne/cuero) -->
+        <button class="control-btn" (click)="goGestionControlProduccion()">
+          <!-- gráfico barras -->
+          <svg class="btn-ico" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
+            <path d="M4 20V10M10 20V4M16 20v-6M2 20h20" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+          </svg>
+          <span>Control Producción</span>
+        </button>
+
+        <!-- 3) Pesaje (individual / rápido) -->
+        <button class="control-btn" (click)="goGestionPesaje()">
+          <!-- balanza -->
+          <svg class="btn-ico" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
+            <path d="M12 3v3m-6 6h6L6 6 3 12zm12 0h-6l6-6 3 6zM4 21h16M12 6v15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <span>Pesaje</span>
+        </button>
+
+        <!-- 4) Parto & Genealogía (vincular descendencia) -->
+        <button class="control-btn" (click)="goGestionPartoGenealogia()">
+          <!-- bebé -->
+          <svg class="btn-ico" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
+            <circle cx="12" cy="8" r="3" stroke="currentColor" stroke-width="1.8"/>
+            <path d="M5 20c2-4 12-4 14 0" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+          </svg>
+          <span>Parto &amp; Genealogía</span>
+        </button>
+
+        <!-- 5) Grupos de Animales (selección masiva reutilizable) -->
+        <button class="control-btn" (click)="goGestionGrupos()">
+          <!-- usuarios -->
+          <svg class="btn-ico" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
+            <path d="M16 13a4 4 0 10-8 0m12 8c0-3.314-3.582-6-8-6s-8 2.686-8 6M16 7a3 3 0 110 6M8 7a3 3 0 110 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+          </svg>
+          <span>Grupos de Animales</span>
+        </button>
       </div>
-      <div class="card-body table-container" *ngIf="animalesHato.length > 0; else noAnimales">
+      <p class="gestion-hint">Accesos directos para registrar y administrar eventos masivos, genealogía y grupos. (Acciones avanzadas próximas)</p>
+    </section>
+
+    <!-- Tabla dinámica -->
+    <section class="card hato-table-wrapper">
+      <div class="card-header"><h3>{{ tablaTitulo }}</h3></div>
+
+      <div class="card-body table-container" *ngIf="(tablaRows?.length || 0) > 0; else noTabla">
         <table>
           <thead>
             <tr>
-              <th>CUI</th>
-              <th>Nombre</th>
-              <th>Raza</th>
-              <th>Sexo</th>
-              <th>Nacimiento</th>
-              <th>Salud</th>
-              <th>Estado</th>
-              <th>Acción</th>
+              <th *ngFor="let c of tablaCols">{{ c.label }}</th>
+              <th *ngIf="tablaModo==='hato' || tablaModo==='alertas'">Acción</th>
             </tr>
           </thead>
           <tbody>
-            <tr *ngFor="let animal of animalesHato">
-              <td class="td-cui">{{ animal.cui }}</td>
-              <td>{{ animal.nombre }}</td>
-              <td>{{ animal.raza.nombre }}</td>
-              <td>{{ animal.sexo }}</td>
-              <td>{{ animal.fecha_nacimiento | date:'dd/MM/yyyy' }}</td>
-              <td>
-                <span class="status-badge" [ngClass]="getCondicionClass(animal.condicion_salud)">
-                  {{ animal.condicion_salud }}
-                </span>
+            <tr *ngFor="let r of tablaRows">
+              <td *ngFor="let c of tablaCols" [ngClass]="c.key==='cui' ? 'td-cui' : ''">
+                {{ r[c.key] }}
               </td>
-              <td>
-                <span class="status-badge status-{{ animal.estado }}">
-                  {{ animal.estado | titlecase }}
-                </span>
-              </td>
-              <td>
-                <button class="btn-ver-registro" [routerLink]="['/user/animal', animal.cui]">
-                  Ver Ficha
-                </button>
+              <td *ngIf="tablaModo==='hato' || tablaModo==='alertas'">
+                <button class="btn-ver-registro" [routerLink]="['/user/animal', r.cui]">Ver Ficha</button>
               </td>
             </tr>
           </tbody>
         </table>
       </div>
-      <ng-template #noAnimales>
+
+      <ng-template #noTabla>
         <div class="card-body">
-          <p class="empty-state">No se encontraron animales activos en este predio.</p>
+          <p class="empty-state">No hay datos para mostrar.</p>
         </div>
       </ng-template>
     </section>
-
   </main>
 </div>
-
-
-<ng-template #customCellTemplate let-day="day" let-locale="locale">
-  <div class="cal-cell-top">
-    <button 
-      type="button"
-      class="cal-day-number"
-      (click)="onDayClicked(day.date)"
-      [class.cal-day-disabled]="day.isPast || day.isFuture"
-      [class.cal-today]="day.isToday">
-      {{ day.date | calendarDate:'monthViewDayNumber':locale }}
-    </button>
-  </div>
-  <div class="cal-events-container" *ngIf="day.events.length > 0">
-    <div class="cal-events">
-      <div 
-        class="cal-event" 
-        *ngFor="let event of day.events | slice:0:3" 
-        [style.backgroundColor]="$any(event).color?.primary">
-      </div>
-    </div>
-  </div>
-</ng-template>

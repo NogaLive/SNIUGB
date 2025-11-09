@@ -182,9 +182,9 @@ export class ApiService {
   crearPredio(predioData: PredioCreateSchema): Observable<PredioResponseSchema> {
     return this.http.post<PredioResponseSchema>(this.buildUrl('/predios'), predioData);
   }
-  getDashboardKpis(predioCodigo: string, periodo: 'hoy' | 'semana' | 'mes'): Observable<KPISchema> {
-    const params = new HttpParams().set('periodo', periodo);
-    return this.http.get<KPISchema>(this.buildUrl(`/dashboard/${predioCodigo}/kpis`), { params });
+  getDashboardKpis(predioCodigo: string, periodo: 'hoy' | 'semana' | 'mes') {
+  const params = new HttpParams().set('periodo', periodo);
+  return this.http.get<KPISchema>(this.buildUrl(`/dashboard/${predioCodigo}/kpis`), { params });
   }
   getAnimalesByPredio(predioCodigo: string, estado: 'activo' | 'en_papelera' = 'activo'): Observable<AnimalResponseSchema[]> {
     const params = new HttpParams().set('estado', estado);
@@ -205,4 +205,15 @@ export class ApiService {
   marcarNotificacionLeida(id: number): Observable<NotificacionDetailResponseSchema> {
     return this.http.get<NotificacionDetailResponseSchema>(this.buildUrl(`/notificaciones/${id}`));
   }
+  
+  getDashboardTabla(
+    predioCodigo: string,
+    tipo: 'hato' | 'alertas' | 'tareas' | 'produccion' | 'transferencias',
+    periodo?: 'hoy' | 'semana' | 'mes'
+  ): Observable<any[]> {
+    let params = new HttpParams().set('tipo', tipo);
+    if (periodo) params = params.set('periodo', periodo);
+    return this.http.get<any[]>(this.buildUrl(`/dashboard/${predioCodigo}/tabla`), { params });
+  }
+
 }

@@ -90,6 +90,7 @@ app = FastAPI(
     description="API para el Sistema Nacional de Identificación Única de Ganado Bovino",
     version="1.0.0",
     lifespan=lifespan,
+    swagger_ui_parameters={"persistAuthorization": True},
 )
 
 # Rate limit: middleware + handler

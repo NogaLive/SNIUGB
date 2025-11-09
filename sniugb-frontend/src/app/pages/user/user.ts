@@ -1,73 +1,83 @@
 import { Component, OnInit } from '@angular/core';
-// ARREGLADO: Importamos TitleCasePipe y DatePipe
-import { CommonModule, DatePipe, TitleCasePipe } from '@angular/common'; 
+import { CommonModule, DatePipe, TitleCasePipe } from '@angular/common';
 import { Router, RouterLink, RouterModule } from '@angular/router';
-import { FormsModule } from '@angular/forms'; 
-import { catchError, of } from 'rxjs'; 
+import { FormsModule } from '@angular/forms';
+import { catchError, of } from 'rxjs';
 
-// --- ARREGLO DE IMPORTACIÓN (Error NG8001) ---
-// Importamos solo los componentes/pipes que SÍ usamos
-import { 
-  CalendarEvent, 
-  CalendarMonthViewComponent,
-  CalendarDatePipe // <--- Para el template del día
-} from 'angular-calendar';
-// NO importamos DateAdapter, adapterFactory ni CalendarCommonModule aquí.
-// ---------------------------------------------
+/* ===== FullCalendar (v6) ===== */
+import { FullCalendarModule } from '@fullcalendar/angular';
+import { CalendarOptions, EventInput } from '@fullcalendar/core';
+import esLocale from '@fullcalendar/core/locales/es';
+import dayGridPlugin from '@fullcalendar/daygrid';
+import interactionPlugin from '@fullcalendar/interaction';
 
-import { PredioModalComponent } from '../../components/predio-modal/predio-modal';
-import { 
-  ApiService, 
-  KPISchema, 
-  Recordatorio, 
-  ApiEvento, 
-  PredioResponseSchema, 
-  AnimalResponseSchema,
+import {
+  PredioModalComponent
+} from '../../components/predio-modal/predio-modal';
+import {
+  ApiService,
+  KPISchema,
+  Recordatorio,
+  ApiEvento,
+  PredioResponseSchema,
   Notificacion
 } from '../../services/api';
 import { AuthService } from '../../services/auth';
 
 type CentroActividadTab = 'notificaciones' | 'recordatorios';
-type KpiPeriodo = 'hoy' | 'semana' | 'mes';
+type Periodo = 'hoy' | 'semana' | 'mes';
 
 @Component({
-  selector: 'app-user', 
+  selector: 'app-user',
   standalone: true,
   imports: [
     CommonModule,
     RouterLink,
     RouterModule,
-    FormsModule, 
-    PredioModalComponent, 
+    FormsModule,
+    PredioModalComponent,
     DatePipe,
-    TitleCasePipe, // <--- Para el título del mes
-    CalendarMonthViewComponent, // <--- Para <mwl-calendar-month-view>
-    CalendarDatePipe          // <--- Para el pipe | calendarDate
+    TitleCasePipe,
+    FullCalendarModule
   ],
-  templateUrl: './user.html', 
-  styleUrls: ['./user.css'],   
-  
-  // ARREGLADO: El array de providers DEBE estar vacío.
-  // Todo se provee globalmente en main.ts o app.config.ts.
-  providers: [], 
+  templateUrl: './user.html',
+  styleUrls: ['./user.css'],
+  providers: [],
 })
-export class UserHomeComponent implements OnInit { 
-  
-  public locale: string = 'es'; // Correcto, el HTML lo usa
-  isLoading: boolean = true;
-  mostrarModalCrearPredio: boolean = false;
+export class UserHomeComponent implements OnInit {
+  public locale: string = 'es';
+  isLoading = true;
+  mostrarModalCrearPredio = false;
   listaDePredios: PredioResponseSchema[] = [];
   predioActivoCodigo: string | null = null;
+
+  // KPIs
   kpis: KPISchema | null = null;
-  periodoKpi: KpiPeriodo = 'hoy';
-  periodoKpiLabel: string = 'Hoy';
-  animalesHato: AnimalResponseSchema[] = [];
+
+  // Periodos para KPIs (solo afectan la tabla)
+  periodoTareas: Periodo = 'hoy';
+  periodoTareasLabel = 'Hoy';
+  periodoProduccion: Periodo = 'hoy';
+  periodoProduccionLabel = 'Hoy';
+  periodoKpiProduccion: Periodo = 'hoy';
+
+  // Tabla dinámica
+  tablaModo: 'hato' | 'alertas' | 'tareas' | 'produccion' | 'transferencias' = 'hato';
+  tablaTitulo = 'Mi Hato (Últimos Registros)';
+  tablaCols: { key: string; label: string }[] = [];
+  tablaRows: any[] = [];
+
+  // Sidebar
   activeTab: CentroActividadTab = 'notificaciones';
   notificaciones: Notificacion[] = [];
   recordatoriosActivos: Recordatorio[] = [];
+
+  // Calendario (FullCalendar)
   calendarViewDate: Date = new Date();
-  calendarEvents: CalendarEvent[] = [];
-  
+  calendarOptions!: CalendarOptions;
+  fcEvents: EventInput[] = [];
+  selectedDate: Date | null = null;
+
   constructor(
     private apiService: ApiService,
     private authService: AuthService,
@@ -75,18 +85,54 @@ export class UserHomeComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    this.initCalendarOptions();
     this.cargarDatosIniciales();
   }
 
-  // --- Lógica de Carga ---
+  /* ---------- FullCalendar setup ---------- */
+  private initCalendarOptions(): void {
+    this.calendarOptions = {
+      plugins: [dayGridPlugin, interactionPlugin],
+      initialView: 'dayGridMonth',
+      locales: [esLocale],
+      locale: 'es',
+      firstDay: 1,
+      fixedWeekCount: false,
+      showNonCurrentDates: true,
+      headerToolbar: false,
+      initialDate: this.calendarViewDate,
+      events: this.fcEvents,
 
+      dateClick: (info) => {
+        this.onDateClick(info.date);
+      },
+
+      datesSet: (arg) => {
+        const center = new Date(arg.start);
+        center.setDate(center.getDate() + 15);
+        this.calendarViewDate = center;
+        this.loadEventosDelMes();
+      },
+
+      dayCellClassNames: (arg) => {
+        const classes: string[] = [];
+        if (this.isSelected(arg.date)) classes.push('is-selected');
+        if (this.isWeekend(arg.date)) classes.push('is-weekend');
+        if (this.hasEventsDate(arg.date)) classes.push('has-events');
+        if (this.hasReminderDate(arg.date)) classes.push('has-reminder');
+        return classes;
+      },
+    };
+  }
+
+  /* ---------------- Carga inicial ---------------- */
   cargarDatosIniciales(): void {
     this.isLoading = true;
     this.apiService.getMisPredios().pipe(
       catchError((err: any) => {
         console.error('Error fatal al cargar predios:', err);
         this.isLoading = false;
-        return of([]); 
+        return of([]);
       })
     ).subscribe((predios: PredioResponseSchema[]) => {
       if (predios.length === 0) {
@@ -97,179 +143,277 @@ export class UserHomeComponent implements OnInit {
         this.predioActivoCodigo = predios[0].codigo_predio;
         this.cargarDatosDashboard(this.predioActivoCodigo);
         this.cargarDatosSidebar();
+
+        // tabla por defecto
+        this.tablaModo = 'hato';
+        this.tablaTitulo = 'Mi Hato (Últimos Registros)';
+        this.cargarTabla();
       }
     });
   }
 
   cargarDatosDashboard(codigoPredio: string): void {
     if (!codigoPredio) return;
-    
-    this.isLoading = true; 
-    this.kpis = null; 
-    this.animalesHato = []; 
-    
-    this.apiService.getDashboardKpis(codigoPredio, this.periodoKpi).pipe(
-      catchError((err: any) => {
-        console.error('Error al cargar KPIs (ver log de backend):', err);
-        this.isLoading = false;
-        return of(null); 
-      })
-    ).subscribe((data: KPISchema | null) => { 
-      this.kpis = data; 
-      if (data) {
-        this.isLoading = false;
-      }
-    });
+    this.isLoading = true;
+    this.kpis = null;
 
-    this.apiService.getAnimalesByPredio(codigoPredio, 'activo').pipe(
+    this.apiService.getDashboardKpis(codigoPredio, this.periodoKpiProduccion).pipe(
       catchError((err: any) => {
-        console.error('Error al cargar animales:', err);
-        return of([]); 
+        console.error('Error al cargar KPIs:', err);
+        this.isLoading = false;
+        return of(null);
       })
-    ).subscribe((data: AnimalResponseSchema[]) => {
-      this.animalesHato = data
-        .sort((a, b) => new Date(b.fecha_nacimiento).getTime() - new Date(a.fecha_nacimiento).getTime())
-        .slice(0, 10); 
+    ).subscribe((data: KPISchema | null) => {
+      this.kpis = data;
+      if (data) this.isLoading = false;
     });
   }
-  
+
   cargarDatosSidebar(): void {
     this.apiService.getRecordatoriosActivos().pipe(
-      catchError((err: any) => {
-        console.error('Error al cargar recordatorios:', err);
-        return of([]);
-      })
-    ).subscribe((data: Recordatorio[]) => { this.recordatoriosActivos = data; });
-    
+      catchError((err: any) => of([]))
+    ).subscribe((data: Recordatorio[]) => this.recordatoriosActivos = data);
+
     this.apiService.getNotificaciones().pipe(
-      catchError((err: any) => {
-        console.error('Error al cargar notificaciones:', err);
-        return of([]);
-      })
-    ).subscribe((data: Notificacion[]) => { this.notificaciones = data; });
+      catchError((err: any) => of([]))
+    ).subscribe((data: Notificacion[]) => this.notificaciones = data);
 
     this.loadEventosDelMes();
   }
 
+  /* --------- Calendario: eventos --------- */
   loadEventosDelMes(): void {
     const year = this.calendarViewDate.getFullYear();
-    const month = this.calendarViewDate.getMonth() + 1; 
+    const month = this.calendarViewDate.getMonth() + 1;
 
     this.apiService.getEventosDelMes(year, month).pipe(
-      catchError((err: any) => { 
+      catchError((err: any) => {
         console.error('Error al cargar eventos del calendario:', err);
-        return of([]); 
+        return of([]);
       })
-    ).subscribe((eventos: ApiEvento[]) => { 
-      this.calendarEvents = this.mapApiEventsToCalendarEvents(eventos);
+    ).subscribe((eventos: ApiEvento[]) => {
+      this.fcEvents = this.mapApiEventsToFC(eventos);
+      this.calendarOptions = { ...this.calendarOptions, events: this.fcEvents };
     });
   }
 
-  // --- Manejadores de Eventos ---
+  private mapApiEventsToFC(eventos: ApiEvento[]): EventInput[] {
+    return eventos.map((e) => ({
+      start: new Date(e.fecha_evento),
+      title: e.titulo,
+      extendedProps: { tipo: e.tipo }
+    }));
+  }
 
-  onPredioCreado(nuevoPredio: PredioResponseSchema): void {
+  /* ---------------- Interacciones ---------------- */
+  onPredioCreado(_: PredioResponseSchema): void {
     this.mostrarModalCrearPredio = false;
-    this.cargarDatosIniciales(); 
+    this.cargarDatosIniciales();
   }
 
   onPredioChange(): void {
-    if (this.predioActivoCodigo) {
-      if (this.predioActivoCodigo === 'CREAR_NUEVO') {
-        this.predioActivoCodigo = this.listaDePredios.length > 0 ? this.listaDePredios[0].codigo_predio : null;
-        this.mostrarModalCrearPredio = true; 
-      } else {
-        this.cargarDatosDashboard(this.predioActivoCodigo);
-      }
-    }
-  }
+    if (!this.predioActivoCodigo) return;
 
-  onKpiProduccionClick(): void {
-    if (this.periodoKpi === 'hoy') {
-      this.periodoKpi = 'semana';
-      this.periodoKpiLabel = 'Semana Actual';
-    } else if (this.periodoKpi === 'semana') {
-      this.periodoKpi = 'mes';
-      this.periodoKpiLabel = 'Mes Actual';
+    if (this.predioActivoCodigo === 'CREAR_NUEVO') {
+      this.predioActivoCodigo = this.listaDePredios.length > 0 ? this.listaDePredios[0].codigo_predio : null;
+      this.mostrarModalCrearPredio = true;
     } else {
-      this.periodoKpi = 'hoy';
-      this.periodoKpiLabel = 'Hoy';
+      this.cargarDatosDashboard(this.predioActivoCodigo);
+      this.cargarTabla();
     }
-    
+  }
+
+  /* ---- KPI handlers ---- */
+  onKpiHatoClick(): void {
+    this.tablaModo = 'hato';
+    this.tablaTitulo = 'Mi Hato (Registro total)';
+    this.cargarTabla();
+  }
+
+  onKpiAlertasClick(): void {
+    this.tablaModo = 'alertas';
+    this.tablaTitulo = 'Alertas de salud (Mes actual)';
+    this.cargarTabla();
+  }
+
+  onKpiTareasClick(): void {
+    if (this.periodoTareas === 'hoy') { this.periodoTareas = 'semana'; this.periodoTareasLabel = 'Semana'; }
+    else if (this.periodoTareas === 'semana') { this.periodoTareas = 'mes'; this.periodoTareasLabel = 'Mes'; }
+    else { this.periodoTareas = 'hoy'; this.periodoTareasLabel = 'Hoy'; }
+
+    this.tablaModo = 'tareas';
+    this.tablaTitulo = `Tareas Pendientes (${this.periodoTareasLabel})`;
+    this.cargarTabla();
+  }
+
+  onKpiProduccionKpiClick(): void {
+    if (this.periodoProduccion === 'hoy') { this.periodoProduccion = 'semana'; this.periodoProduccionLabel = 'Semana'; }
+    else if (this.periodoProduccion === 'semana') { this.periodoProduccion = 'mes'; this.periodoProduccionLabel = 'Mes'; }
+    else { this.periodoProduccion = 'hoy'; this.periodoProduccionLabel = 'Hoy'; }
+
+    this.periodoKpiProduccion = this.periodoProduccion;
     if (this.predioActivoCodigo) {
-      this.kpis = null; 
-      this.apiService.getDashboardKpis(this.predioActivoCodigo, this.periodoKpi).pipe(
-        catchError((err: any) => {
-          console.error('Error al cargar KPIs:', err);
-          return of(null);
-        })
-      ).subscribe((data: KPISchema | null) => { 
-        this.kpis = data; 
-      });
+      this.apiService.getDashboardKpis(this.predioActivoCodigo, this.periodoKpiProduccion)
+        .pipe(catchError(() => of(null)))
+        .subscribe(d => this.kpis = d);
     }
+
+    this.tablaModo = 'produccion';
+    this.tablaTitulo = `Producción (${this.periodoProduccionLabel})`;
+    this.cargarTabla();
   }
 
-  seleccionarTab(tab: CentroActividadTab): void {
-    this.activeTab = tab;
+  onKpiTransferenciasClick(): void {
+    this.tablaModo = 'transferencias';
+    this.tablaTitulo = 'Transferencias Pendientes';
+    this.cargarTabla();
   }
-  
+
+  /* ---- Tabla dinámica ---- */
+  private cargarTabla(): void {
+    if (!this.predioActivoCodigo) return;
+
+    if (this.tablaModo === 'hato' || this.tablaModo === 'alertas') {
+      this.tablaCols = [
+        { key: 'cui', label: 'CUI' },
+        { key: 'nombre', label: 'Nombre' },
+        { key: 'raza', label: 'Raza' },
+        { key: 'sexo', label: 'Sexo' },
+        { key: 'fecha_nacimiento', label: 'Nacimiento' },
+        { key: 'condicion_salud', label: 'Salud' },
+        { key: 'estado', label: 'Estado' },
+      ];
+    } else if (this.tablaModo === 'tareas') {
+      this.tablaCols = [
+        { key: 'fecha_evento', label: 'Fecha' },
+        { key: 'titulo', label: 'Título' },
+        { key: 'tipo', label: 'Tipo' },
+      ];
+    } else if (this.tablaModo === 'produccion') {
+      this.tablaCols = [
+        { key: 'fecha_evento', label: 'Fecha' },
+        { key: 'animal_cui', label: 'CUI' },
+        { key: 'tipo_evento', label: 'Evento' },
+        { key: 'valor', label: 'Valor' },
+        { key: 'observaciones', label: 'Obs.' },
+      ];
+    } else if (this.tablaModo === 'transferencias') {
+      this.tablaCols = [
+        { key: 'id', label: 'ID' },
+        { key: 'solicitante', label: 'Solicitante' },
+        { key: 'cantidad', label: '# Animales' },
+        { key: 'fecha_solicitud', label: 'Fecha' },
+        { key: 'estado', label: 'Estado' },
+      ];
+    }
+
+    const periodo: Periodo | undefined =
+      this.tablaModo === 'tareas' ? this.periodoTareas :
+      this.tablaModo === 'produccion' ? this.periodoProduccion :
+      undefined;
+
+    this.apiService.getDashboardTabla(this.predioActivoCodigo, this.tablaModo, periodo)
+      .pipe(catchError(() => of([])))
+      .subscribe((rows: any[]) => this.tablaRows = rows || []);
+  }
+
+  /* ---- Sidebar ---- */
+  seleccionarTab(tab: CentroActividadTab): void { this.activeTab = tab; }
+
   marcarNotificacionLeida(notif: Notificacion): void {
-    if (notif.leida && !notif.link) return; 
-
+    if (notif.leida && !notif.link) return;
     this.apiService.marcarNotificacionLeida(notif.id).subscribe({
       next: (detalleNotif) => {
-        notif.leida = true; 
-        if (detalleNotif.link) {
-          this.router.navigate([detalleNotif.link]);
-        }
+        notif.leida = true;
+        if (detalleNotif.link) this.router.navigate([detalleNotif.link]);
       },
       error: (err: any) => console.error('Error al marcar notificación como leída:', err)
     });
   }
-  
+
   toggleRecordatorio(recordatorio: Recordatorio): void {
     this.apiService.toggleRecordatorio(recordatorio.id).subscribe({
-      next: () => {
-        this.cargarDatosSidebar(); 
-      },
+      next: () => this.cargarDatosSidebar(),
       error: (err: any) => console.error('Error al actualizar recordatorio:', err)
     });
   }
 
-  onDayClicked(date: Date): void {
-    console.log('Día clickeado:', date);
+  /* ---- Calendario: selección y utilidades ---- */
+  private sameDay(a: Date, b: Date): boolean {
+    return a.getFullYear() === b.getFullYear() &&
+           a.getMonth() === b.getMonth() &&
+           a.getDate() === b.getDate();
   }
 
-  // ARREGLADO: Esta función es necesaria para el (viewDateChange) del header
+  onDateClick(date: Date): void {
+    this.selectedDate = date;
+    this.calendarOptions = { ...this.calendarOptions };
+  }
+
+  isSelected(d: Date): boolean {
+    return !!this.selectedDate && this.sameDay(this.selectedDate, d);
+  }
+
+  isWeekend(d: Date): boolean {
+    const w = d.getDay();
+    return w === 0 || w === 6;
+  }
+
+  private hasEventsDate(date: Date): boolean {
+    return this.fcEvents?.some(e => e.start && this.sameDay(new Date(e.start as any), date));
+  }
+
+  private hasReminderDate(date: Date): boolean {
+    return this.fcEvents?.some(e => {
+      const isSame = e.start && this.sameDay(new Date(e.start as any), date);
+      const tipo = (e.extendedProps as any)?.tipo;
+      return isSame && tipo === 'RECORDATORIO';
+    }) || false;
+  }
+
   cambiarMes(offset: number): void {
     const newDate = new Date(this.calendarViewDate);
     newDate.setMonth(newDate.getMonth() + offset);
     this.calendarViewDate = newDate;
-    this.loadEventosDelMes(); 
-  }
-  // ------------------------------------------
 
-  // --- Helpers ---
-  public getCondicionClass(condicion: string): string {
-    if (!condicion) return '';
-    return condicion.toLowerCase().replace(' ', '-');
-  }
+    this.calendarOptions = {
+      ...this.calendarOptions,
+      initialDate: this.calendarViewDate
+    };
 
-  private mapApiEventsToCalendarEvents(eventos: ApiEvento[]): CalendarEvent[] {
-    return eventos.map((evento) => ({
-      start: new Date(evento.fecha_evento),
-      title: evento.titulo,
-      color: this.getEventColor(evento.tipo),
-      meta: evento,
-    }));
+    this.loadEventosDelMes();
   }
 
-  private getEventColor(tipo: string): { primary: string; secondary: string } {
-    const azul = '#0056AC';
-    const verde = '#128C7E';
-    
-    if (tipo === 'RECORDATORIO') {
-      return { primary: verde, secondary: '#D9F0ED' };
-    }
-    return { primary: azul, secondary: '#D9E7F6' };
+  /* ==========================
+   * NUEVOS: Gestión (botones)
+   * ========================== */
+
+  goGestionSanitarioMasivo(): void {
+    // Aquí luego: this.router.navigate(['/gestion/sanitario']);
+    console.info('Ir a Gestión > Eventos Sanitarios (masivo)');
+    alert('Eventos Sanitarios (masivo): próximamente. Aquí podrás aplicar enfermedad/tratamiento a varios animales.');
+  }
+
+  goGestionControlProduccion(): void {
+    // Vista de control de producción; por ahora muestra tabla de producción del periodo actual
+    this.tablaModo = 'produccion';
+    this.tablaTitulo = `Producción (${this.periodoProduccionLabel})`;
+    this.cargarTabla();
+  }
+
+  goGestionPesaje(): void {
+    // Acceso rápido a producción tipo Pesaje (luego se navega a formulario)
+    console.info('Ir a Gestión > Pesaje (individual)');
+    alert('Pesaje rápido: próximamente. Permitirá registrar el peso del animal y actualizar su ficha.');
+  }
+
+  goGestionPartoGenealogia(): void {
+    console.info('Ir a Gestión > Parto & Genealogía');
+    alert('Parto & Genealogía: próximamente. Vinculará crías/ascendencia y mostrará el árbol (3 generaciones).');
+  }
+
+  goGestionGrupos(): void {
+    console.info('Ir a Gestión > Grupos de Animales');
+    alert('Grupos de Animales: próximamente. Crea grupos para selecciones masivas reutilizables.');
   }
 }

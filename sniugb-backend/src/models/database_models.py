@@ -1,5 +1,7 @@
-from sqlalchemy import (Column, String, DateTime, func, ForeignKey, Integer, 
-                          Enum as SQLAlchemyEnum, Text, Boolean)
+from sqlalchemy import (
+    Column, String, DateTime, func, ForeignKey, Integer, Text, Boolean,
+    Enum as SQLAlchemyEnum, Float, Table, UniqueConstraint
+)
 from sqlalchemy.orm import relationship
 from sqlalchemy.orm import declarative_base
 import uuid
@@ -8,7 +10,9 @@ import random
 
 Base = declarative_base()
 
-# --- CLASES ENUM DE PYTHON (Nombres Únicos y Descriptivos) ---
+# =========================
+# ENUMS (solo los fijos)
+# =========================
 
 class UserRole(enum.Enum):
     GANADERO = "ganadero"
@@ -19,34 +23,64 @@ class AnimalCondicionSalud(enum.Enum):
     EN_OBSERVACION = "En Observación"
     ENFERMO = "Enfermo"
 
-class EventoSanitarioTipo(enum.Enum):
-    VACUNACION = "Vacunación"
-    TRATAMIENTO = "Tratamiento"
-    DESPARASITACION = "Desparasitación"
-
-class EventoProduccionTipo(enum.Enum):
-    PESAJE = "Pesaje"
-    PARTO = "Parto"
-    CONTROL_LECHERO = "Control Lechero"
-
 class TransferenciaEstado(enum.Enum):
     PENDIENTE = "Pendiente"
     APROBADA = "Aprobada"
     RECHAZADA = "Rechazada"
     EXPIRADA = "Expirada"
-    
+
 class CalendarioEventoTipo(enum.Enum):
     RECORDATORIO = "Recordatorio"
     EVENTO = "Evento"
 
-class InventarioCategoria(enum.Enum):
-    ALIMENTO = "Alimento"
-    MEDICAMENTO = "Medicamento"
-    VACUNA = "Vacuna"
-    EQUIPO = "Equipo"
+# Grupos lógicos para la tabla dinamica de tipos de evento
+class TipoEventoGrupo(enum.Enum):
+    SANITARIO = "SANITARIO"
+    HISTORICO = "HISTORICO"
+    PRODUCCION = "PRODUCCION"
 
 
-# --- MODELOS DE LAS TABLAS ---
+# =========================
+# CATÁLOGOS DINÁMICOS
+# =========================
+
+class TipoEvento(Base):
+    """
+    Tipos dinámicos de eventos.
+      - grupo: SANITARIO / HISTORICO / PRODUCCION
+      - nombre: p.ej. 'Vacunación', 'Tratamiento', 'Desparasitación',
+                'Pesaje', 'Parto', 'Control Lechero',
+                'LECHE', 'CARNE', 'CUERO'
+      - multi_animal: si el evento admite múltiples animales (p.ej. Control Lechero)
+      - estado_resultante: SOLO para grupo SANITARIO (afecta la condición del animal)
+    """
+    __tablename__ = "tipo_evento"
+    id = Column(Integer, primary_key=True, index=True)
+    grupo = Column(SQLAlchemyEnum(TipoEventoGrupo, name="tipo_evento_grupo_enum"), nullable=False, index=True)
+    nombre = Column(String, nullable=False)
+    multi_animal = Column(Boolean, default=False, nullable=False)
+    estado_resultante = Column(SQLAlchemyEnum(AnimalCondicionSalud, name="tipo_evento_estado_resultante_enum"), nullable=True)
+
+    __table_args__ = (UniqueConstraint("grupo", "nombre", name="uq_tipo_evento_grupo_nombre"),)
+
+
+class Catalogo(Base):
+    """
+    Catálogo dinámico para: TRATAMIENTO, MEDICAMENTO, METODO_ANALISIS, INVENTARIO_CATEGORIA, etc.
+    Si usuario_dni es NULL, es global (admin). Si no, es propio del usuario (p.ej. categorías de inventario).
+    """
+    __tablename__ = "catalogo"
+    id = Column(Integer, primary_key=True, index=True)
+    grupo = Column(String, index=True, nullable=False)  # 'TRATAMIENTO', 'MEDICAMENTO', 'METODO_ANALISIS', 'INVENTARIO_CATEGORIA', ...
+    nombre = Column(String, nullable=False)
+    usuario_dni = Column(String, ForeignKey("datos_del_usuario.numero_de_dni"), nullable=True)
+
+    __table_args__ = (UniqueConstraint("grupo", "nombre", "usuario_dni", name="uq_catalogo_grupo_nombre_usuario"),)
+
+
+# =========================
+# MODELOS BASE DEL DOMINIO
+# =========================
 
 class Raza(Base):
     __tablename__ = "razas"
@@ -69,13 +103,12 @@ class Usuario(Base):
     password = Column(String, nullable=False)
     estado = Column(String, default="activo")
     rol = Column(SQLAlchemyEnum(UserRole, name='user_role_enum'), default=UserRole.GANADERO, nullable=False)
-    refresh_tokens = relationship("RefreshToken", back_populates="user", cascade="all, delete-orphan")
     fecha_de_registro = Column(DateTime(timezone=True), server_default=func.now())
     reset_token = Column(String, nullable=True)
     reset_token_expires = Column(DateTime(timezone=True), nullable=True)
 
+    refresh_tokens = relationship("RefreshToken", back_populates="user", cascade="all, delete-orphan")
     predios = relationship("Predio", back_populates="propietario")
-    
 
 def generate_predio_code():
     return f"PRD-{uuid.uuid4().hex[:6].upper()}"
@@ -87,9 +120,23 @@ class Predio(Base):
     departamento = Column(String, nullable=False)
     ubicacion = Column(String, nullable=False)
     propietario_dni = Column(String, ForeignKey("datos_del_usuario.numero_de_dni"), nullable=False)
+
     propietario = relationship("Usuario", back_populates="predios")
     animales = relationship("Animal", back_populates="predio")
     inventario_items = relationship("InventarioItem", back_populates="predio")
+
+# --- GRUPOS DE ANIMALES (para selecciones masivas reutilizables)
+class AnimalGroup(Base):
+    __tablename__ = "animal_groups"
+    id = Column(Integer, primary_key=True, index=True)
+    nombre = Column(String, nullable=False)
+    usuario_dni = Column(String, ForeignKey("datos_del_usuario.numero_de_dni"), nullable=False)
+    __table_args__ = (UniqueConstraint("usuario_dni", "nombre", name="uq_animal_group_usuario_nombre"),)
+
+class AnimalGroupMember(Base):
+    __tablename__ = "animal_group_members"
+    group_id = Column(Integer, ForeignKey("animal_groups.id"), primary_key=True)
+    animal_cui = Column(String(11), ForeignKey("animales.cui"), primary_key=True)
 
 class Animal(Base):
     __tablename__ = "animales"
@@ -97,35 +144,87 @@ class Animal(Base):
     nombre = Column(String)
     raza_id = Column(Integer, ForeignKey("razas.id"))
     raza = relationship("Raza")
-    sexo = Column(String)
+    sexo = Column(String)  # 'Macho'/'Hembra' u otros
     fecha_nacimiento = Column(DateTime(timezone=True))
     peso = Column(String)
     condicion_salud = Column(SQLAlchemyEnum(AnimalCondicionSalud, name='animal_condicion_salud_enum'), default=AnimalCondicionSalud.SANO)
     estado = Column(String, default="activo", index=True)
     predio_codigo = Column(String, ForeignKey("predios.codigo_predio"))
-    predio = relationship("Predio", back_populates="animales")
-    eventos_sanitarios = relationship("EventoSanitario", cascade="all, delete-orphan")
-    eventos_produccion = relationship("EventoProduccion", cascade="all, delete-orphan")
 
+    # Genealogía
+    madre_cui = Column(String(11), ForeignKey("animales.cui"), nullable=True)
+    padre_cui = Column(String(11), ForeignKey("animales.cui"), nullable=True)
+
+    predio = relationship("Predio", back_populates="animales")
+
+    madre = relationship("Animal", remote_side=[cui], foreign_keys=[madre_cui], post_update=True, backref="hijos_por_madre")
+    padre = relationship("Animal", remote_side=[cui], foreign_keys=[padre_cui], post_update=True, backref="hijos_por_padre")
+
+    # Relaciones con eventos
+    eventos_sanitarios = relationship("EventoSanitario", secondary=lambda: evento_sanitario_animales, back_populates="animales")
+    eventos_produccion = relationship("EventoProduccion", cascade="all, delete-orphan")
+    eventos_historicos = relationship("EventoHistorico", secondary=lambda: evento_historico_animales, back_populates="animales")
+
+
+# --- Tablas puente de eventos multi-animal
+evento_sanitario_animales = Table(
+    "evento_sanitario_animales",
+    Base.metadata,
+    Column("evento_id", ForeignKey("eventos_sanitarios.id"), primary_key=True),
+    Column("animal_cui", ForeignKey("animales.cui"), primary_key=True),
+)
+
+evento_historico_animales = Table(
+    "evento_historico_animales",
+    Base.metadata,
+    Column("evento_id", ForeignKey("eventos_historicos.id"), primary_key=True),
+    Column("animal_cui", ForeignKey("animales.cui"), primary_key=True),
+)
+
+# --- Eventos SANITARIOS
 class EventoSanitario(Base):
     __tablename__ = "eventos_sanitarios"
     id = Column(Integer, primary_key=True, index=True)
-    animal_cui = Column(String(11), ForeignKey("animales.cui"), nullable=False)
     fecha_evento = Column(DateTime(timezone=True), nullable=False)
-    tipo_evento = Column(SQLAlchemyEnum(EventoSanitarioTipo, name='evento_sanitario_tipo_enum'), nullable=False)
-    producto_nombre = Column(String)
-    dosis = Column(String)
+    tipo_evento_id = Column(Integer, ForeignKey("tipo_evento.id"), nullable=False)  # grupo = SANITARIO
+    tratamiento_id = Column(Integer, ForeignKey("catalogo.id"), nullable=True)     # grupo = TRATAMIENTO (opcional)
+    producto_nombre = Column(String, nullable=True)  # libre o tomado de un catálogo si luego lo deseas
+    dosis = Column(String, nullable=True)
     observaciones = Column(Text, nullable=True)
 
+    tipo = relationship("TipoEvento")
+    tratamiento = relationship("Catalogo")
+    animales = relationship("Animal", secondary=evento_sanitario_animales, back_populates="eventos_sanitarios")
+
+# --- Eventos de PRODUCCIÓN (LECHE/CARNE/CUERO)
 class EventoProduccion(Base):
     __tablename__ = "eventos_produccion"
     id = Column(Integer, primary_key=True, index=True)
     animal_cui = Column(String(11), ForeignKey("animales.cui"), nullable=False)
     fecha_evento = Column(DateTime(timezone=True), nullable=False)
-    tipo_evento = Column(SQLAlchemyEnum(EventoProduccionTipo, name='evento_produccion_tipo_enum'), nullable=False)
-    valor = Column(String)
+    tipo_evento_id = Column(Integer, ForeignKey("tipo_evento.id"), nullable=False)  # grupo = PRODUCCION
+    valor = Column(Float, nullable=False)
+    unidad = Column(String, nullable=False)   # 'Lt', 'Kg', 'Ud'
     observaciones = Column(Text, nullable=True)
 
+    tipo = relationship("TipoEvento")
+
+# --- Eventos HISTÓRICOS (Pesaje/Parto/Control Lechero/…)
+class EventoHistorico(Base):
+    __tablename__ = "eventos_historicos"
+    id = Column(Integer, primary_key=True, index=True)
+    fecha_evento = Column(DateTime(timezone=True), nullable=False)
+    tipo_evento_id = Column(Integer, ForeignKey("tipo_evento.id"), nullable=False)  # grupo = HISTORICO
+    valor = Column(Float, nullable=True)     # para Pesaje o controles
+    unidad = Column(String, nullable=True)
+    observaciones = Column(Text, nullable=True)
+    # Para PARTO, guardamos descendencia como CSV además de setear madre/padre en los hijos
+    descendencia_cuis = Column(Text, nullable=True)
+
+    tipo = relationship("TipoEvento")
+    animales = relationship("Animal", secondary=evento_historico_animales, back_populates="eventos_historicos")
+
+# --- Transferencias
 class TransferenciaAnimal(Base):
     __tablename__ = 'transferencia_animal_association'
     transferencia_id = Column(Integer, ForeignKey('transferencias.id'), primary_key=True)
@@ -142,22 +241,27 @@ class Transferencia(Base):
     estado = Column(SQLAlchemyEnum(TransferenciaEstado, name='transferencia_estado_enum'), default=TransferenciaEstado.PENDIENTE)
     fecha_solicitud = Column(DateTime(timezone=True), server_default=func.now())
     fecha_actualizacion = Column(DateTime(timezone=True), onupdate=func.now())
+
     animales = relationship("Animal", secondary="transferencia_animal_association")
     solicitante = relationship("Usuario", foreign_keys=[solicitante_dni])
     receptor = relationship("Usuario", foreign_keys=[receptor_dni])
-    
+
+# --- Inventario (categoría dinámica por usuario vía Catalogo)
 class InventarioItem(Base):
     __tablename__ = "inventario_items"
     id = Column(Integer, primary_key=True, index=True)
     nombre_item = Column(String, nullable=False)
-    categoria = Column(SQLAlchemyEnum(InventarioCategoria, name='inventario_categoria_enum'), nullable=False)
+    categoria_id = Column(Integer, ForeignKey("catalogo.id"), nullable=True)  # grupo='INVENTARIO_CATEGORIA' y usuario_dni = propietario
     descripcion = Column(Text, nullable=True)
     stock = Column(Integer, default=0)
     unidad_medida = Column(String)
     cantidad_alerta = Column(Integer, nullable=True)
     predio_codigo = Column(String, ForeignKey("predios.codigo_predio"), nullable=False)
-    predio = relationship("Predio", back_populates="inventario_items")
 
+    predio = relationship("Predio", back_populates="inventario_items")
+    categoria = relationship("Catalogo")
+
+# --- Notificaciones, Calendario, Contenido
 class Notificacion(Base):
     __tablename__ = "notificaciones"
     id = Column(Integer, primary_key=True, index=True)
@@ -166,7 +270,7 @@ class Notificacion(Base):
     leida = Column(Boolean, default=False)
     fecha_creacion = Column(DateTime(timezone=True), server_default=func.now())
     link = Column(String, nullable=True)
-    
+
 class Evento(Base):
     __tablename__ = "eventos_calendario"
     id = Column(Integer, primary_key=True, index=True)
@@ -184,10 +288,9 @@ class Categoria(Base):
     id = Column(Integer, primary_key=True)
     nombre = Column(String, unique=True, nullable=False)
     imagen_url = Column(String, nullable=False)
-    
+
 class Articulo(Base):
     __tablename__ = "articulos"
-
     id = Column(Integer, primary_key=True, index=True)
     titulo = Column(String, nullable=False)
     slug = Column(String, unique=True, index=True, nullable=False)
@@ -212,9 +315,9 @@ class ContenidoAyuda(Base):
     id = Column(Integer, primary_key=True, index=True)
     tipo = Column(SQLAlchemyEnum(TipoContenidoAyuda, name='tipo_contenido_ayuda_enum'), nullable=False)
     pregunta_titulo = Column(String, nullable=False)
-    respuesta_contenido = Column(Text, nullable=True) # Para el texto de la FAQ
-    video_url = Column(String, nullable=True) # Para el enlace del video tutorial
-    orden = Column(Integer, default=0) # Para ordenar las preguntas
+    respuesta_contenido = Column(Text, nullable=True)
+    video_url = Column(String, nullable=True)
+    orden = Column(Integer, default=0)
 
 class SolicitudSoporte(Base):
     __tablename__ = "solicitudes_soporte"

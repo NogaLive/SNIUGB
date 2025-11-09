@@ -3,7 +3,7 @@ from fastapi.routing import APIRoute
 from sqlalchemy.orm import Session
 from typing import List
 from src.utils.security import get_current_user, get_db
-from src.models.database_models import Usuario, Predio, InventarioItem, InventarioCategoria
+from src.models.database_models import Usuario, Predio, InventarioItem
 from src.models.inventario_models import InventarioItemCreateSchema, InventarioItemResponseSchema, InventarioItemUpdateSchema
 
 inventario_router = APIRouter(
