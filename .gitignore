@@ -17,6 +17,7 @@ sniugb-backend/.mypy_cache/
 sniugb-backend/*.py[cod]
 sniugb-backend/.env
 sniugb-backend/alembic/*.pyc
+sniugb-backend/sniugb-backend.zip
 
 # --- Frontend (Angular) ---
 sniugb-frontend/node_modules/
@@ -25,4 +26,5 @@ sniugb-frontend/.angular/
 sniugb-frontend/.env
 sniugb-frontend/.env.local
 sniugb-frontend/coverage/
+sniugb-frontend/sniugb-frontend.zip
 "@ | Out-File -Encoding utf8 .gitignore
