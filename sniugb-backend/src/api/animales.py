@@ -1,37 +1,35 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Body
+from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.routing import APIRoute
 from sqlalchemy.orm import Session
-from typing import List, Optional
+from sqlalchemy import func
+from pydantic import BaseModel
 
 from src.utils.security import get_current_user, get_db
 from src.models.database_models import (
     Usuario, Animal, Predio,
-    EventoSanitario, EventoProduccion, EventoHistorico,
-    TipoEvento, TipoEventoGrupo, AnimalCondicionSalud,
-    Catalogo
+    AnimalCondicionSalud,
+    EventoSanitario, EventoSanitarioAnimal,
+    EventoProduccion, ProduccionTipo,
+    ControlCalidad, ControlCalidadAnimal,
+    TipoEvento
 )
 from src.models.animal_models import (
-    AnimalResponseSchema, AnimalDeleteConfirmationSchema,
+    AnimalResponseSchema, AnimalDeleteConfirmationSchema, 
     AnimalDetailResponseSchema, AnimalUpdateSchema
 )
-# Puedes mantener tus Schemas existentes para crear eventos; aquí
-# aceptamos dicts simples para encajar rápido con los cambios.
-# Idealmente defines Pydantic Schemas nuevos (omito por brevedad).
+from src.models.evento_models import (
+    EventoSanitarioCreateSchema, EventoSanitarioResponseSchema,
+    EventoProduccionCreateSchema, EventoProduccionResponseSchema,
+    ControlCalidadCreateSchema, ControlCalidadResponseSchema,
+)
 
 animales_router = APIRouter(
     prefix="/animales",
-    tags=["Animales (Individual)"],
+    tags=["Animales (Individual / Eventos)"],
     route_class=APIRoute
 )
 
-def ensure_owner(db: Session, cui: str, user: Usuario) -> Animal:
-    animal = db.query(Animal).join(Animal.predio).filter(
-        Animal.cui == cui,
-        Predio.propietario_dni == user.numero_de_dni
-    ).first()
-    if not animal:
-        raise HTTPException(status_code=404, detail="Animal no encontrado.")
-    return animal
+# ---------------- EXISTENTES ----------------
 
 @animales_router.get("/{cui}", response_model=AnimalDetailResponseSchema)
 async def get_animal_detail(
@@ -39,7 +37,12 @@ async def get_animal_detail(
     db: Session = Depends(get_db),
     current_user: Usuario = Depends(get_current_user)
 ):
-    animal = ensure_owner(db, cui, current_user)
+    animal = db.query(Animal).join(Animal.predio).filter(
+        Animal.cui == cui,
+        Predio.propietario_dni == current_user.numero_de_dni
+    ).first()
+    if not animal:
+        raise HTTPException(status_code=404, detail="Animal no encontrado.")
     return animal
 
 @animales_router.put("/{cui}", response_model=AnimalResponseSchema)
@@ -49,7 +52,12 @@ async def update_animal_details(
     db: Session = Depends(get_db),
     current_user: Usuario = Depends(get_current_user)
 ):
-    animal = ensure_owner(db, cui, current_user)
+    animal = db.query(Animal).join(Animal.predio).filter(
+        Animal.cui == cui,
+        Predio.propietario_dni == current_user.numero_de_dni
+    ).first()
+    if not animal:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Animal no encontrado.")
     update_data = animal_data.model_dump(exclude_unset=True)
     for k, v in update_data.items():
         setattr(animal, k, v)
@@ -61,198 +69,167 @@ async def update_animal_details(
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Error al actualizar el animal: {e}")
 
-# =========================
-# SANITARIOS (multi-animal)
-# =========================
+# ---------------- NUEVO: Helper tipos dinámicos ----------------
 
-@animales_router.post("/{cui}/eventos-sanitarios", status_code=status.HTTP_201_CREATED)
-async def create_evento_sanitario(
-    cui: str,
-    payload: dict = Body(...)
-    ,
+class TipoEventoResponse(BaseModel):
+    id: int
+    nombre: str
+    grupo: str
+
+@animales_router.get("/tipos/{grupo}", response_model=list[TipoEventoResponse])
+async def listar_tipos_por_grupo(
+    grupo: str,
     db: Session = Depends(get_db),
     current_user: Usuario = Depends(get_current_user)
 ):
-    """
-    Crea un evento sanitario. Acepta:
-      {
-        "fecha_evento": "YYYY-MM-DD",
-        "tipo_evento": "Vacunación" | "Tratamiento" | "Desparasitación" | ... (definido en TipoEvento, grupo=SANITARIO),
-        "producto_nombre": "...", "dosis":"...", "observaciones":"...",
-        "tratamiento": "Antibiótico X" (opcional; Catalogo grupo='TRATAMIENTO'),
-        "animales_cuis": ["...","..."] (opcional; si no viene, usa {cui})
-      }
-    Si el tipo tiene estado_resultante, se actualiza la condición de salud.
-    """
-    # valida animales
-    animales_cuis: List[str] = payload.get("animales_cuis") or [cui]
-    animales = []
-    for acui in animales_cuis:
-        animales.append(ensure_owner(db, acui, current_user))
+    tipos = db.query(TipoEvento).filter(TipoEvento.grupo == grupo).order_by(TipoEvento.nombre.asc()).all()
+    return [TipoEventoResponse(id=t.id, nombre=t.nombre, grupo=t.grupo) for t in tipos]
 
-    # tipo
-    tipo_nombre = payload.get("tipo_evento")
-    tipo = db.query(TipoEvento).filter(
-        TipoEvento.grupo == TipoEventoGrupo.SANITARIO,
-        TipoEvento.nombre == tipo_nombre
+# ---------------- SANIDAD (MASIVO) ----------------
+
+@animales_router.post("/eventos-sanitarios", status_code=status.HTTP_201_CREATED)
+async def crear_evento_sanitario_masivo(
+    payload: EventoSanitarioCreateSchema,
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(get_current_user)
+):
+    # Validación tipos
+    tipo_enf = db.query(TipoEvento).filter(
+        TipoEvento.id == payload.tipo_evento_enfermedad_id,
+        TipoEvento.grupo == "ENFERMEDAD"
     ).first()
-    if not tipo:
-        raise HTTPException(status_code=422, detail=f"Tipo sanitario '{tipo_nombre}' no existe.")
+    if not tipo_enf:
+        raise HTTPException(status_code=422, detail="Tipo de ENFERMEDAD inválido.")
 
-    # tratamiento (opcional)
-    trat_nombre = payload.get("tratamiento")
-    trat = None
-    if trat_nombre:
-        trat = db.query(Catalogo).filter(
-            Catalogo.grupo == "TRATAMIENTO", Catalogo.nombre == trat_nombre
+    tipo_trat = None
+    if payload.tipo_evento_tratamiento_id:
+        tipo_trat = db.query(TipoEvento).filter(
+            TipoEvento.id == payload.tipo_evento_tratamiento_id,
+            TipoEvento.grupo == "TRATAMIENTO"
         ).first()
+        if not tipo_trat:
+            raise HTTPException(status_code=422, detail="Tipo de TRATAMIENTO inválido.")
 
-    ev = EventoSanitario(
-        fecha_evento=payload["fecha_evento"],
-        tipo=tipo,
-        tratamiento=trat,
-        producto_nombre=payload.get("producto_nombre"),
-        dosis=payload.get("dosis"),
-        observaciones=payload.get("observaciones")
+    # Filtrar animales del usuario (mismo predio del usuario activo)
+    animales = db.query(Animal).join(Animal.predio).filter(
+        Animal.cui.in_(payload.animales_cui),
+        Predio.propietario_dni == current_user.numero_de_dni
+    ).all()
+    if len(animales) == 0:
+        raise HTTPException(status_code=404, detail="No se encontraron animales válidos del usuario.")
+
+    evento = EventoSanitario(
+        fecha_evento_enfermedad=payload.fecha_evento_enfermedad,
+        tipo_evento_enfermedad_id=payload.tipo_evento_enfermedad_id,
+        fecha_evento_tratamiento=payload.fecha_evento_tratamiento,
+        tipo_evento_tratamiento_id=payload.tipo_evento_tratamiento_id,
+        nombre_tratamiento=payload.nombre_tratamiento,
+        dosis=payload.dosis,
+        unidad_medida_dosis=payload.unidad_medida_dosis,
+        observaciones=payload.observaciones,
+        creador_dni=current_user.numero_de_dni
     )
-    ev.animales = animales
-    db.add(ev)
+    db.add(evento)
+    db.flush()  # para obtener id
 
-    # Transición de salud basada en tipo.estado_resultante (si está definido)
-    if tipo.estado_resultante is not None:
-        for a in animales:
-            a.condicion_salud = tipo.estado_resultante
+    # Asociaciones
+    for a in animales:
+        db.add(EventoSanitarioAnimal(evento_id=evento.id, animal_cui=a.cui))
+        # Reglas de estado
+        if payload.tipo_evento_tratamiento_id:
+            a.condicion_salud = AnimalCondicionSalud.EN_OBSERVACION
+        else:
+            a.condicion_salud = AnimalCondicionSalud.ENFERMO
 
     db.commit()
-    db.refresh(ev)
-    return {"id": ev.id, "afectados": [a.cui for a in animales]}
+    return {"id": evento.id, "cuids": [a.cui for a in animales], "detalle": "Evento sanitario registrado."}
 
-# =========================
-# PRODUCCIÓN (LECHE/CARNE/CUERO)
-# =========================
+# ---------------- PRODUCCIÓN (INDIVIDUAL) ----------------
+# Mantengo la ruta por CUI que ya usabas
 
 @animales_router.post("/{cui}/eventos-produccion", status_code=status.HTTP_201_CREATED)
 async def create_evento_produccion(
     cui: str,
-    payload: dict = Body(...),
+    evento_data: EventoProduccionCreateSchema,
     db: Session = Depends(get_db),
     current_user: Usuario = Depends(get_current_user)
 ):
-    """
-    Producción:
-      {
-        "fecha_evento": "YYYY-MM-DD",
-        "tipo_evento": "LECHE" | "CARNE" | "CUERO",  (TipoEvento grupo=PRODUCCION)
-        "valor": 12.34,
-        "unidad": "Lt" | "Kg" | "Ud",
-        "observaciones": "..."
-      }
-    """
-    animal = ensure_owner(db, cui, current_user)
-
-    tipo_nombre = payload.get("tipo_evento")
-    tipo = db.query(TipoEvento).filter(
-        TipoEvento.grupo == TipoEventoGrupo.PRODUCCION,
-        TipoEvento.nombre == tipo_nombre
+    animal = db.query(Animal).join(Animal.predio).filter(
+        Animal.cui == cui,
+        Predio.propietario_dni == current_user.numero_de_dni
     ).first()
-    if not tipo:
-        raise HTTPException(status_code=422, detail=f"Tipo producción '{tipo_nombre}' no existe.")
+    if not animal:
+        raise HTTPException(status_code=404, detail="Animal no encontrado.")
 
     try:
-        valor = float(payload["valor"])
-    except Exception:
-        raise HTTPException(status_code=422, detail="valor debe ser numérico")
+        tipo = ProduccionTipo(evento_data.tipo_evento)
+    except ValueError:
+        raise HTTPException(status_code=422, detail="Tipo de producción inválido.")
 
-    ev = EventoProduccion(
-        animal_cui=animal.cui,
-        fecha_evento=payload["fecha_evento"],
-        tipo=tipo,
-        valor=valor,
-        unidad=payload.get("unidad") or ("Lt" if tipo.nombre == "LECHE" else "Kg"),
-        observaciones=payload.get("observaciones")
+    nuevo = EventoProduccion(
+        animal_cui=cui,
+        fecha_evento=evento_data.fecha_evento,
+        tipo_evento=evento_data.tipo_evento,
+        valor_cantidad=evento_data.valor_cantidad,
+        unidad_medida=evento_data.unidad_medida,
+        observaciones=evento_data.observaciones
     )
-    db.add(ev)
+    db.add(nuevo)
     db.commit()
-    db.refresh(ev)
-    return {"id": ev.id}
+    db.refresh(nuevo)
+    return nuevo
 
-# =========================
-# HISTÓRICOS (Pesaje/Parto/Control Lechero)
-# =========================
+# ---------------- CONTROL DE CALIDAD (MASIVO) ----------------
 
-@animales_router.post("/{cui}/eventos-historicos", status_code=status.HTTP_201_CREATED)
-async def create_evento_historico(
-    cui: str,
-    payload: dict = Body(...),
+@animales_router.post("/control-calidad", status_code=status.HTTP_201_CREATED)
+async def crear_control_calidad_masivo(
+    payload: ControlCalidadCreateSchema,
     db: Session = Depends(get_db),
     current_user: Usuario = Depends(get_current_user)
 ):
-    """
-    Histórico:
-      - Pesaje: { "fecha_evento", "tipo_evento":"Pesaje", "valor":float, "unidad":"Kg", "observaciones" }
-      - Control Lechero (multi): { "fecha_evento", "tipo_evento":"Control Lechero", "animales_cuis":[...], "valor":?, "unidad":"?", ... } (valor/unidad opcional)
-      - Parto: { "fecha_evento", "tipo_evento":"Parto", "descendencia_cuis":[...], "observaciones" }
-              -> asigna madre/padre según sexo del progenitor {cui}
-    """
-    animal = ensure_owner(db, cui, current_user)
-
-    tipo_nombre = payload.get("tipo_evento")
+    # validar tipo CONTROL_CALIDAD
     tipo = db.query(TipoEvento).filter(
-        TipoEvento.grupo == TipoEventoGrupo.HISTORICO,
-        TipoEvento.nombre == tipo_nombre
+        TipoEvento.id == payload.tipo_evento_calidad_id,
+        TipoEvento.grupo == "CONTROL_CALIDAD"
     ).first()
     if not tipo:
-        raise HTTPException(status_code=422, detail=f"Tipo histórico '{tipo_nombre}' no existe.")
+        raise HTTPException(status_code=422, detail="Tipo de control de calidad inválido.")
 
-    # multi-animal (p.ej. control lechero)
-    animales: List[Animal] = [animal]
-    if tipo.multi_animal:
-        arr = payload.get("animales_cuis") or [cui]
-        animales = [ensure_owner(db, acui, current_user) for acui in arr]
+    # validar producto
+    try:
+        producto = ProduccionTipo(payload.producto)
+        if producto == ProduccionTipo.PESAJE:
+            raise ValueError()
+    except Exception:
+        raise HTTPException(status_code=422, detail="Producto inválido (LECHE/CARNE/CUERO).")
 
-    valor = None
-    if "valor" in payload and payload["valor"] is not None:
-        try:
-            valor = float(payload["valor"])
-        except Exception:
-            raise HTTPException(status_code=422, detail="valor debe ser numérico")
+    # animales del usuario
+    animales = db.query(Animal).join(Animal.predio).filter(
+        Animal.cui.in_(payload.animales_cui),
+        Predio.propietario_dni == current_user.numero_de_dni
+    ).all()
+    if len(animales) == 0:
+        raise HTTPException(status_code=404, detail="No se encontraron animales válidos del usuario.")
 
-    ev = EventoHistorico(
-        fecha_evento=payload["fecha_evento"],
-        tipo=tipo,
-        valor=valor,
-        unidad=payload.get("unidad"),
-        observaciones=payload.get("observaciones"),
+    control = ControlCalidad(
+        fecha_evento=payload.fecha_evento,
+        tipo_evento_calidad_id=payload.tipo_evento_calidad_id,
+        producto=producto,
+        valor_cantidad=payload.valor_cantidad,
+        unidad_medida=payload.unidad_medida,
+        observaciones=payload.observaciones,
+        creador_dni=current_user.numero_de_dni
     )
-    ev.animales = animales
+    db.add(control)
+    db.flush()
 
-    # Si es PARTO, vincular descendencia y setear madre/padre en hijos
-    if tipo.nombre.lower() == "parto":
-        hijos: List[str] = payload.get("descendencia_cuis") or []
-        if not hijos:
-            raise HTTPException(status_code=422, detail="PARTO requiere descendencia_cuis")
-        ev.descendencia_cuis = ",".join(hijos)
+    for a in animales:
+        db.add(ControlCalidadAnimal(control_id=control.id, animal_cui=a.cui))
 
-        # setea madre o padre en cada nuevo hijo según sexo del progenitor
-        is_madre = (animal.sexo or "").lower().startswith("h")
-        for child_cui in hijos:
-            ch = db.query(Animal).filter(Animal.cui == child_cui).first()
-            if not ch:
-                # si aún no existe, lo dejamos para cuando se cree ese animal
-                # (quedará solo en descendencia_cuis del evento)
-                continue
-            if is_madre:
-                ch.madre_cui = animal.cui
-            else:
-                ch.padre_cui = animal.cui
-
-    db.add(ev)
     db.commit()
-    return {"id": ev.id, "animales": [a.cui for a in animales]}
+    return {"id": control.id, "cuids": [a.cui for a in animales], "detalle": "Control de calidad registrado."}
 
-# =========================
-# BORRADO / RESTAURACIÓN
-# =========================
+# ---------------- DELETE/RESTORE (ya los tenías) ----------------
 
 @animales_router.delete("/{cui}", status_code=status.HTTP_200_OK)
 async def soft_delete_animal(
@@ -263,7 +240,12 @@ async def soft_delete_animal(
 ):
     if cui != confirmation_data.confirmacion_cui:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="El CUI de confirmación no coincide.")
-    animal = ensure_owner(db, cui, current_user)
+    animal = db.query(Animal).join(Animal.predio).filter(
+        Animal.cui == cui,
+        Predio.propietario_dni == current_user.numero_de_dni
+    ).first()
+    if not animal:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Animal no encontrado.")
     animal.estado = "en_papelera"
     db.commit()
     return {"message": f"El animal con CUI {cui} ha sido enviado a la papelera por 30 días."}

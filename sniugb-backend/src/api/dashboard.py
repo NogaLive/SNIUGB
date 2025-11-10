@@ -1,3 +1,4 @@
+# src/api/dashboard.py
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.routing import APIRoute
 from sqlalchemy.orm import Session
@@ -7,10 +8,10 @@ from datetime import datetime, timedelta, date, time
 from src.utils.security import get_current_user, get_db
 from src.models.database_models import (
     Usuario, Predio, Animal,
-    EventoProduccion, EventoHistorico, EventoSanitario,
+    EventoProduccion,
     Transferencia, TransferenciaEstado,
     AnimalCondicionSalud, Evento, CalendarioEventoTipo,
-    TipoEvento, TipoEventoGrupo
+    ProduccionTipo
 )
 from src.models.dashboard_models import KPISchema
 
@@ -42,6 +43,7 @@ async def get_dashboard_kpis(
     db: Session = Depends(get_db),
     current_user: Usuario = Depends(get_current_user)
 ):
+    # Verificación de pertenencia del predio
     predio = db.query(Predio).filter(
         Predio.codigo_predio == predio_codigo,
         Predio.propietario_dni == current_user.numero_de_dni
@@ -63,7 +65,7 @@ async def get_dashboard_kpis(
         Animal.condicion_salud.in_([AnimalCondicionSalud.ENFERMO, AnimalCondicionSalud.EN_OBSERVACION])
     ).count()
 
-    # KPI 3: Tareas (hoy) -> mantenemos hoy para consistencia con tu front
+    # KPI 3: Tareas (hoy)
     today = date.today()
     tareas_para_hoy = db.query(Evento).filter(
         Evento.usuario_dni == current_user.numero_de_dni,
@@ -72,29 +74,20 @@ async def get_dashboard_kpis(
         func.date(Evento.fecha_evento) == today
     ).count()
 
-    # KPI 4: Producción por periodo (LECHE/CARNE)
-    tipo_leche = db.query(TipoEvento.id).filter(
-        TipoEvento.grupo == TipoEventoGrupo.PRODUCCION, TipoEvento.nombre == "LECHE"
-    ).scalar()
-    tipo_carne = db.query(TipoEvento.id).filter(
-        TipoEvento.grupo == TipoEventoGrupo.PRODUCCION, TipoEvento.nombre == "CARNE"
-    ).scalar()
+    # KPI 4: Producción por periodo (CARNE en kg, LECHE en litros)
+    prod_carne = db.query(func.sum(EventoProduccion.valor_cantidad)).join(Animal).filter(
+        Animal.predio_codigo == predio_codigo,
+        EventoProduccion.fecha_evento.between(start_dt, end_dt),
+        EventoProduccion.tipo_evento == ProduccionTipo.CARNE,
+        EventoProduccion.unidad_medida.in_(["kg","Kg","KG"])
+    ).scalar() or 0.0
 
-    prod_leche = 0.0
-    if tipo_leche:
-        prod_leche = db.query(func.coalesce(func.sum(EventoProduccion.valor), 0.0)).join(Animal).filter(
-            Animal.predio_codigo == predio_codigo,
-            EventoProduccion.fecha_evento.between(start_dt, end_dt),
-            EventoProduccion.tipo_evento_id == tipo_leche
-        ).scalar() or 0.0
-
-    prod_carne = 0.0
-    if tipo_carne:
-        prod_carne = db.query(func.coalesce(func.sum(EventoProduccion.valor), 0.0)).join(Animal).filter(
-            Animal.predio_codigo == predio_codigo,
-            EventoProduccion.fecha_evento.between(start_dt, end_dt),
-            EventoProduccion.tipo_evento_id == tipo_carne
-        ).scalar() or 0.0
+    prod_leche = db.query(func.sum(EventoProduccion.valor_cantidad)).join(Animal).filter(
+        Animal.predio_codigo == predio_codigo,
+        EventoProduccion.fecha_evento.between(start_dt, end_dt),
+        EventoProduccion.tipo_evento == ProduccionTipo.LECHE,
+        EventoProduccion.unidad_medida.in_(["L","Lt","Lts","l"])
+    ).scalar() or 0.0
 
     # KPI 5: Transferencias pendientes recibidas
     solicitudes_transferencia = db.query(Transferencia).filter(
@@ -106,11 +99,10 @@ async def get_dashboard_kpis(
         "total_hato": total_hato,
         "alertas_salud": alertas_salud,
         "tareas_para_hoy": tareas_para_hoy,
-        "produccion_reciente_carne": round(prod_carne, 2),
-        "produccion_reciente_leche": round(prod_leche, 2),
+        "produccion_reciente_carne": round(float(prod_carne), 2),
+        "produccion_reciente_leche": round(float(prod_leche), 2),
         "solicitudes_transferencia": solicitudes_transferencia
     }
-
 
 @dashboard_router.get("/{predio_codigo}/tabla")
 async def get_tabla_dashboard(
@@ -186,8 +178,8 @@ async def get_tabla_dashboard(
         return [{
             "fecha_evento": ep.fecha_evento.isoformat() if ep.fecha_evento else None,
             "animal_cui": ep.animal_cui,
-            "tipo_evento": ep.tipo.nombre if ep.tipo else None,
-            "valor": f"{ep.valor:g} {ep.unidad}" if ep.unidad else f"{ep.valor:g}",
+            "tipo_evento": ep.tipo_evento.value if ep.tipo_evento else None,
+            "valor": f"{ep.valor_cantidad:g} {ep.unidad_medida}" if ep.unidad_medida else f"{ep.valor_cantidad:g}",
             "observaciones": ep.observaciones
         } for ep in eventos]
 

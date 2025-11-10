@@ -262,3 +262,31 @@
 .fc .fc-daygrid-day-bottom { display: none !important; }
 
 .fc .fc-daygrid { padding: .6rem; background: var(--color-blanco); }
+
+/* ---- Chips input (buscador con selección) ---- */
+.chip-input{ position:relative; }
+.chip-input .chips{
+  display:flex; align-items:center; flex-wrap:wrap; gap:.6rem;
+  min-height:40px; border:1px solid #ced4da; border-radius:6px; padding:.4rem .6rem;
+  background:#fff;
+}
+.chip-input .chips input{
+  border:none; outline:none; height:32px; flex:1 1 120px; font-family:'Lexend',sans-serif;
+}
+.chip{
+  background:#eef5ff; color:#0056AC; border:1px solid rgba(0,86,172,.2);
+  padding:.2rem .8rem; border-radius:999px; font-size:1.3rem; display:inline-flex; align-items:center; gap:.4rem;
+}
+.chip button{
+  background:none; border:none; cursor:pointer; color:#0056AC; font-weight:700; line-height:1; font-size:1.4rem;
+}
+.chip-input .suggestions{
+  position:absolute; left:0; right:0; top:100%; z-index:5;
+  background:#fff; border:1px solid #e9ecef; border-radius:8px; margin-top:.4rem; max-height:220px; overflow:auto;
+  box-shadow:0 6px 20px rgba(0,0,0,.08);
+}
+.chip-input .suggestions li{
+  padding:.8rem 1rem; cursor:pointer; font-size:1.4rem;
+}
+.chip-input .suggestions li:hover{ background:#f6f9ff; }
+.chip-input.single .chips .chip{ margin-right:.4rem; }

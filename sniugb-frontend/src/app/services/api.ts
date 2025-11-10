@@ -102,6 +102,20 @@ export interface ApiEvento {
   descripcion?: string;
 }
 
+export interface EventoSanitarioCreate {
+  fecha_evento: string;
+  tipo_evento: string;
+  producto_nombre?: string | null;
+  dosis?: string | null;
+  observaciones?: string | null;
+}
+export interface EventoProduccionCreate {
+  fecha_evento: string;
+  tipo_evento: string;    // “LECHE” | “CARNE” | “CUERO” | “Pesaje” (según backend)
+  valor?: string | null;
+  observaciones?: string | null;
+}
+
 @Injectable({ providedIn: 'root' })
 export class ApiService {
   private backendUrl = environment.apiBaseUrl.replace(/\/+$/, '');
@@ -214,6 +228,29 @@ export class ApiService {
     let params = new HttpParams().set('tipo', tipo);
     if (periodo) params = params.set('periodo', periodo);
     return this.http.get<any[]>(this.buildUrl(`/dashboard/${predioCodigo}/tabla`), { params });
+  }
+
+  getAnimalByCui(cui: string): Observable<AnimalResponseSchema> {
+    return this.http.get<AnimalResponseSchema>(this.buildUrl(`/animales/${encodeURIComponent(cui)}`));
+  }
+
+  crearEventoSanitario(cui: string, data: EventoSanitarioCreate): Observable<any> {
+    return this.http.post<any>(this.buildUrl(`/animales/${encodeURIComponent(cui)}/eventos-sanitarios`), data);
+  }
+
+  crearEventoProduccion(cui: string, data: EventoProduccionCreate): Observable<any> {
+    return this.http.post<any>(this.buildUrl(`/animales/${encodeURIComponent(cui)}/eventos-produccion`), data);
+  }
+
+  crearControlCalidad(cui: string, body: {
+    fecha_evento: string;
+    producto: 'LECHE'|'CARNE'|'CUERO';
+    metodo_id: number | null;
+    valor: string;
+    unidad_medida: string;
+    observaciones?: string | null;
+  }) {
+    return this.http.post(this.buildUrl(`/animales/${cui}/control-calidad`), body);
   }
 
 }

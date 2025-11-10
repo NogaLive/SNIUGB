@@ -130,25 +130,20 @@
     <section class="control-panel">
       <h3>Panel de Control</h3>
       <div class="control-buttons">
-        <button class="control-btn">
-          <img src="assets/user/lens_icono.svg" alt="Buscar">
-          <span>Buscar Registro</span>
+        <button class="control-btn" (click)="goBuscarRegistro()">
+          <img src="assets/user/lens_icono.svg" alt="Buscar"><span>Buscar Registro</span>
         </button>
-        <button class="control-btn">
-          <img src="assets/user/plus_icono.svg" alt="Agregar">
-          <span>Agregar Ganado</span>
+        <button class="control-btn" (click)="goAgregarGanado()">
+          <img src="assets/user/plus_icono.svg" alt="Agregar"><span>Agregar Ganado</span>
         </button>
-        <button class="control-btn">
-          <img src="assets/user/transfer_icono.svg" alt="Transferir">
-          <span>Transferencias</span>
+        <button class="control-btn" (click)="goTransferencias()">
+          <img src="assets/user/transfer_icono.svg" alt="Transferir"><span>Transferencias</span>
         </button>
-        <button class="control-btn">
-          <img src="assets/user/reports_icono.svg" alt="Reportes">
-          <span>Reportes</span>
+        <button class="control-btn" (click)="goReportes()">
+          <img src="assets/user/reports_icono.svg" alt="Reportes"><span>Reportes</span>
         </button>
-        <button class="control-btn">
-          <img src="assets/user/inventory_icono.svg" alt="Inventario">
-          <span>Inventario</span>
+        <button class="control-btn" (click)="goInventario()">
+          <img src="assets/user/inventory_icono.svg" alt="Inventario"><span>Inventario</span>
         </button>
       </div>
     </section>
@@ -157,53 +152,36 @@
     <section class="gestion-panel">
       <h3>Panel de Gestión</h3>
       <div class="gestion-buttons">
-        <!-- 1) Eventos Sanitarios (masivo) -->
         <button class="control-btn" (click)="goGestionSanitarioMasivo()">
-          <!-- cruz médica -->
           <svg class="btn-ico" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
             <path d="M12 4v16M4 12h16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
           </svg>
           <span>Eventos Sanitarios</span>
         </button>
 
-        <!-- 2) Control de Producción (masivo: leche/carne/cuero) -->
-        <button class="control-btn" (click)="goGestionControlProduccion()">
-          <!-- gráfico barras -->
+        <button class="control-btn" (click)="goGestionEventosProduccion()">
           <svg class="btn-ico" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
             <path d="M4 20V10M10 20V4M16 20v-6M2 20h20" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
           </svg>
-          <span>Control Producción</span>
+          <span>Eventos Producción</span>
         </button>
 
-        <!-- 3) Pesaje (individual / rápido) -->
-        <button class="control-btn" (click)="goGestionPesaje()">
-          <!-- balanza -->
+        <button class="control-btn" (click)="goGestionControlCalidad()">
           <svg class="btn-ico" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
-            <path d="M12 3v3m-6 6h6L6 6 3 12zm12 0h-6l6-6 3 6zM4 21h16M12 6v15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="1.8"/>
+            <path d="M8 12h8M12 8v8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
           </svg>
-          <span>Pesaje</span>
+          <span>Control Calidad</span>
         </button>
 
-        <!-- 4) Parto & Genealogía (vincular descendencia) -->
-        <button class="control-btn" (click)="goGestionPartoGenealogia()">
-          <!-- bebé -->
-          <svg class="btn-ico" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
-            <circle cx="12" cy="8" r="3" stroke="currentColor" stroke-width="1.8"/>
-            <path d="M5 20c2-4 12-4 14 0" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-          </svg>
-          <span>Parto &amp; Genealogía</span>
-        </button>
-
-        <!-- 5) Grupos de Animales (selección masiva reutilizable) -->
         <button class="control-btn" (click)="goGestionGrupos()">
-          <!-- usuarios -->
           <svg class="btn-ico" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
             <path d="M16 13a4 4 0 10-8 0m12 8c0-3.314-3.582-6-8-6s-8 2.686-8 6M16 7a3 3 0 110 6M8 7a3 3 0 110 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
           </svg>
           <span>Grupos de Animales</span>
         </button>
       </div>
-      <p class="gestion-hint">Accesos directos para registrar y administrar eventos masivos, genealogía y grupos. (Acciones avanzadas próximas)</p>
+      <p class="gestion-hint">Registra producción individual, controles de calidad masivos y sanitarios.</p>
     </section>
 
     <!-- Tabla dinámica -->
@@ -237,5 +215,203 @@
         </div>
       </ng-template>
     </section>
+
+    <app-ui-modal
+      [open]="!!activeModal"
+      [busy]="submitting"
+      [title]="
+        activeModal === 'buscar' ? 'Buscar registro por CUI' :
+        activeModal === 'agregar' ? 'Agregar Ganado' :
+        activeModal === 'transferencias' ? 'Transferencias' :
+        activeModal === 'reportes' ? 'Reportes' :
+        activeModal === 'inventario' ? 'Inventario' :
+        activeModal === 'sanitario' ? 'Registrar Evento Sanitario (masivo)' :
+        activeModal === 'produccion' ? 'Registrar Evento de Producción' :
+        activeModal === 'calidad' ? 'Control de Calidad (masivo)' :
+        activeModal === 'grupos' ? 'Grupos de Animales' : ''
+      "
+      (requestClose)="closeModal()">
+
+      <ng-container [ngSwitch]="activeModal">
+
+        <!-- Buscar -->
+        <form class="ui-form" *ngSwitchCase="'buscar'" (ngSubmit)="submitBuscar()">
+          <div class="row">
+            <label for="cuiBus">CUI del animal</label>
+            <input id="cuiBus" type="text" [(ngModel)]="formBuscar.cui" name="cui" placeholder="Ej: 11500000015" />
+          </div>
+          <div class="ui-actions">
+            <button type="button" class="btn-outline" (click)="closeModal()">Cancelar</button>
+            <button type="submit" class="btn-primary" [disabled]="submitting">Buscar</button>
+          </div>
+        </form>
+
+        <!-- Eventos Sanitarios (masivo) -->
+        <form class="ui-form" *ngSwitchCase="'sanitario'" (ngSubmit)="submitSanitario()">
+          <div class="row">
+            <label>Animales</label>
+            <div class="chip-input">
+              <div class="chips">
+                <span class="chip" *ngFor="let a of selectedAnimals; let i = index">
+                  {{ a.nombre || a.cui }} <button type="button" (click)="removeAnimal(i)">×</button>
+                </span>
+                <input type="text" [(ngModel)]="animalQuery" name="qSan" (input)="onAnimalQueryChange()" placeholder="Busca por CUI o nombre…" />
+              </div>
+              <ul class="suggestions" *ngIf="animalSuggestions.length">
+                <li *ngFor="let s of animalSuggestions" (click)="addAnimal(s)">
+                  <strong>{{ s.cui }}</strong> — {{ s.nombre || 'Sin nombre' }}
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="row">
+            <label for="fechaSan">Fecha del evento</label>
+            <input id="fechaSan" type="datetime-local" [(ngModel)]="formSanitario.fecha_evento" name="fechaSan" required />
+          </div>
+          <div class="row">
+            <label for="tipoSan">Tipo de evento</label>
+            <select id="tipoSan" [(ngModel)]="formSanitario.tipo_evento" name="tipoSan" required>
+              <option>Vacunación</option>
+              <option>Tratamiento</option>
+              <option>Desparasitación</option>
+            </select>
+          </div>
+          <div class="row"><label for="prodSan">Producto / Medicamento</label>
+            <input id="prodSan" type="text" [(ngModel)]="formSanitario.producto_nombre" name="prodSan" placeholder="Nombre comercial" />
+          </div>
+          <div class="row"><label for="dosisSan">Dosis</label>
+            <input id="dosisSan" type="text" [(ngModel)]="formSanitario.dosis" name="dosisSan" placeholder="Ej: 5 ml" />
+          </div>
+          <div class="row"><label for="obsSan">Observaciones</label>
+            <textarea id="obsSan" [(ngModel)]="formSanitario.observaciones" name="obsSan"></textarea>
+          </div>
+
+          <div class="ui-actions">
+            <button type="button" class="btn-outline" (click)="closeModal()">Cancelar</button>
+            <button type="submit" class="btn-primary" [disabled]="submitting">Guardar</button>
+          </div>
+        </form>
+
+        <!-- Evento de Producción (individual) -->
+        <form class="ui-form" *ngSwitchCase="'produccion'" (ngSubmit)="submitProduccion()">
+          <div class="row">
+            <label>Animal</label>
+            <div class="chip-input single">
+              <div class="chips">
+                <span class="chip" *ngFor="let a of selectedAnimals; let i=index">
+                  {{ a.nombre || a.cui }} <button type="button" (click)="removeAnimal(i)">×</button>
+                </span>
+                <input type="text" [(ngModel)]="animalQuery" name="qProd" (input)="onAnimalQueryChange()" placeholder="Busca por CUI o nombre…" />
+              </div>
+              <ul class="suggestions" *ngIf="animalSuggestions.length">
+                <li *ngFor="let s of animalSuggestions" (click)="addAnimal(s)">
+                  <strong>{{ s.cui }}</strong> — {{ s.nombre || 'Sin nombre' }}
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="row">
+            <label for="fechaProd">Fecha</label>
+            <input id="fechaProd" type="datetime-local" [(ngModel)]="formProduccion.fecha_evento" name="fechaProd" required />
+          </div>
+          <div class="row">
+            <label for="prodTipo">Producto</label>
+            <select id="prodTipo" [(ngModel)]="formProduccion.producto" name="prodTipo">
+              <option value="LECHE">Leche</option>
+              <option value="CARNE">Carne</option>
+              <option value="CUERO">Cuero</option>
+            </select>
+          </div>
+          <div class="row">
+            <label for="valorProd">Valor</label>
+            <input id="valorProd" type="text" [(ngModel)]="formProduccion.valor" name="valorProd" placeholder="Ej: 12 L / 250 kg" />
+          </div>
+          <div class="row">
+            <label for="obsProd">Observaciones</label>
+            <textarea id="obsProd" [(ngModel)]="formProduccion.observaciones" name="obsProd"></textarea>
+          </div>
+
+          <div class="ui-actions">
+            <button type="button" class="btn-outline" (click)="closeModal()">Cancelar</button>
+            <button type="submit" class="btn-primary" [disabled]="submitting">Guardar</button>
+          </div>
+        </form>
+
+        <!-- Control de Calidad (multi) -->
+        <form class="ui-form" *ngSwitchCase="'calidad'" (ngSubmit)="submitCalidad()">
+          <div class="row">
+            <label>Animales</label>
+            <div class="chip-input">
+              <div class="chips">
+                <span class="chip" *ngFor="let a of selectedAnimals; let i = index">
+                  {{ a.nombre || a.cui }} <button type="button" (click)="removeAnimal(i)">×</button>
+                </span>
+                <input type="text" [(ngModel)]="animalQuery" name="qCal" (input)="onAnimalQueryChange()" placeholder="Busca por CUI o nombre…" />
+              </div>
+              <ul class="suggestions" *ngIf="animalSuggestions.length">
+                <li *ngFor="let s of animalSuggestions" (click)="addAnimal(s)">
+                  <strong>{{ s.cui }}</strong> — {{ s.nombre || 'Sin nombre' }}
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="row">
+            <label for="fechaCal">Fecha</label>
+            <input id="fechaCal" type="datetime-local" [(ngModel)]="formCalidad.fecha_evento" name="fechaCal" required />
+          </div>
+          <div class="row">
+            <label for="prodCal">Producto</label>
+            <select id="prodCal" [(ngModel)]="formCalidad.producto" name="prodCal">
+              <option value="LECHE">Leche</option>
+              <option value="CARNE">Carne</option>
+              <option value="CUERO">Cuero</option>
+            </select>
+          </div>
+          <div class="row">
+            <label for="valorCal">Valor</label>
+            <input id="valorCal" type="text" [(ngModel)]="formCalidad.valor" name="valorCal" placeholder="Cantidad analizada" />
+          </div>
+          <div class="row">
+            <label for="umCal">Unidad de medida</label>
+            <input id="umCal" type="text" [(ngModel)]="formCalidad.unidad_medida" name="umCal" placeholder="kg, L, ml, u, doc, etc." />
+          </div>
+          <div class="row">
+            <label for="obsCal">Observaciones</label>
+            <textarea id="obsCal" [(ngModel)]="formCalidad.observaciones" name="obsCal"></textarea>
+          </div>
+
+          <div class="ui-actions">
+            <button type="button" class="btn-outline" (click)="closeModal()">Cancelar</button>
+            <button type="submit" class="btn-primary" [disabled]="submitting">Aplicar a seleccionados</button>
+          </div>
+        </form>
+
+        <!-- Placeholders -->
+        <div class="ui-form" *ngSwitchCase="'agregar'">
+          <p>Formulario de alta de ganado (pendiente de conectar a endpoint).</p>
+          <div class="ui-actions"><button type="button" class="btn-outline" (click)="closeModal()">Cerrar</button></div>
+        </div>
+        <div class="ui-form" *ngSwitchCase="'transferencias'">
+          <p>Gestión de transferencias (pendiente).</p>
+          <div class="ui-actions"><button type="button" class="btn-outline" (click)="closeModal()">Cerrar</button></div>
+        </div>
+        <div class="ui-form" *ngSwitchCase="'reportes'">
+          <p>Selector de reportes y filtros (pendiente).</p>
+          <div class="ui-actions"><button type="button" class="btn-outline" (click)="closeModal()">Cerrar</button></div>
+        </div>
+        <div class="ui-form" *ngSwitchCase="'inventario'">
+          <p>Inventario (pendiente de exponer endpoints).</p>
+          <div class="ui-actions"><button type="button" class="btn-outline" (click)="closeModal()">Cerrar</button></div>
+        </div>
+        <div class="ui-form" *ngSwitchCase="'grupos'">
+          <p>Crear y gestionar grupos de animales (pendiente).</p>
+          <div class="ui-actions"><button type="button" class="btn-outline" (click)="closeModal()">Cerrar</button></div>
+        </div>
+
+      </ng-container>
+    </app-ui-modal>
   </main>
 </div>

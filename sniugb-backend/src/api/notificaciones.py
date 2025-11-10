@@ -1,11 +1,11 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.routing import APIRoute
 from sqlalchemy.orm import Session
 from typing import List
 
 from src.utils.security import get_current_user, get_db
 from src.models.database_models import Usuario, Notificacion, Transferencia
-from src.models.notificacion_models import NotificacionResponseSchema, NotificacionDetailResponseSchema
+from src.models.notificacion_models import NotificacionResponse, NotificacionDetailResponse
 
 notificaciones_router = APIRouter(
     prefix="/notificaciones",
@@ -13,38 +13,32 @@ notificaciones_router = APIRouter(
     route_class=APIRoute
 )
 
-@notificaciones_router.get("/", response_model=List[NotificacionResponseSchema])
-async def get_mis_notificaciones(
+@notificaciones_router.get("", response_model=list[NotificacionResponse])
+async def listar_notificaciones(
+    limit: int = Query(20, ge=1, le=100),
+    offset: int = Query(0, ge=0),
+    solo_no_leidas: bool = Query(False),
     db: Session = Depends(get_db),
     current_user: Usuario = Depends(get_current_user)
 ):
-    """
-    Obtiene TODAS las notificaciones (leídas y no leídas) para el usuario actual,
-    ordenadas por fecha de creación descendente.
-    """
-    notificaciones = db.query(Notificacion).filter(
-        Notificacion.usuario_dni == current_user.numero_de_dni
-    ).order_by(Notificacion.fecha_creacion.desc()).all()
-    
-    return notificaciones
+    q = db.query(Notificacion).filter(Notificacion.usuario_dni == current_user.numero_de_dni)
+    if solo_no_leidas:
+        q = q.filter(Notificacion.leida == False)
+    items = q.order_by(Notificacion.fecha_creacion.desc()).offset(offset).limit(limit).all()
+    return items
 
 @notificaciones_router.get("/contador-no-leidas")
 async def get_contador_notificaciones_no_leidas(
     db: Session = Depends(get_db),
     current_user: Usuario = Depends(get_current_user)
 ):
-    """
-    Devuelve solo el NÚMERO de notificaciones no leídas para el usuario actual.
-    Ideal para mostrar en un ícono de campana en el frontend.
-    """
     count = db.query(Notificacion).filter(
         Notificacion.usuario_dni == current_user.numero_de_dni,
         Notificacion.leida == False
     ).count()
-    
     return {"no_leidas": count}
 
-@notificaciones_router.get("/{notificacion_id}", response_model=NotificacionDetailResponseSchema)
+@notificaciones_router.get("/{notificacion_id}", response_model=NotificacionDetailResponse)
 async def get_notificacion_detail(
     notificacion_id: int,
     db: Session = Depends(get_db),
@@ -62,7 +56,7 @@ async def get_notificacion_detail(
         raise HTTPException(status_code=404, detail="Notificación no encontrada.")
 
     # Si la notificación no estaba leída, la marcamos como leída
-    response_data = NotificacionDetailResponseSchema.model_validate(notificacion)
+    response_data = NotificacionDetailResponse.model_validate(notificacion)
     
     # Si la notificación está relacionada con una transferencia, adjuntamos los detalles
     if notificacion.link and "/transferencias/" in notificacion.link:
@@ -76,7 +70,7 @@ async def get_notificacion_detail(
 
     return response_data
 
-@notificaciones_router.patch("/{notificacion_id}", response_model=NotificacionDetailResponseSchema)
+@notificaciones_router.patch("/{notificacion_id}", response_model=NotificacionDetailResponse)
 async def marcar_notificacion_leida(
     notificacion_id: int,
     db: Session = Depends(get_db),
@@ -92,4 +86,4 @@ async def marcar_notificacion_leida(
         notificacion.leida = True
         db.commit()
         db.refresh(notificacion)
-    return NotificacionDetailResponseSchema.model_validate(notificacion)
+    return NotificacionDetailResponse.model_validate(notificacion)

@@ -1,0 +1,16 @@
+<!-- Render condicional -->
+<div *ngIf="open" #overlay class="ui-overlay"
+     (pointerdown)="onOverlayPointerDown($event)"
+     (pointerup)="onOverlayPointerUp($event)">
+
+  <div #card class="ui-card" (click)="stop($event)">
+    <header class="ui-card__header">
+      <h2 class="ui-card__title">{{ title }}</h2>
+    </header>
+
+    <section class="ui-card__body">
+      <!-- Aquí se inyecta tu formulario/contenido -->
+      <ng-content></ng-content>
+    </section>
+  </div>
+</div>

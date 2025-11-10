@@ -107,7 +107,7 @@ def ratelimit_handler(request, exc):
 # CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=ALLOWED_ORIGINS,
+    allow_origins=["http://localhost:4200"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -158,3 +158,7 @@ app.add_exception_handler(RequestValidationError, error_handler.validation_excep
 @app.exception_handler(Exception)
 async def all_exceptions(request, exc):
     return await error_handler.unhandled_exception_handler(request, exc)
+
+@app.options("/{path:path}")
+def preflight_handler():
+    return {}

@@ -1,0 +1,169 @@
+:host {
+  font-family: 'Lexend', sans-serif;
+  --color-azul: #0056AC;
+  --color-texto: #26292E;
+  --color-texto-sec: #6C757D;
+  --color-rojo: #BF0909;
+  --color-blanco: #ffffff;
+  --borde-color: #dee2e6;
+}
+
+/* ====== Overlay con blur (igual a PredioModal) ====== */
+.ui-overlay {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(10px);
+  display: grid;
+  place-items: center;
+  z-index: 1000;
+}
+
+/* ====== Tarjeta ====== */
+.ui-card {
+  background: var(--color-blanco);
+  padding: 3rem 4rem;
+  border-radius: 12px;
+  border: 1px solid var(--borde-color);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, .1);
+  width: min(55rem, 92vw);
+  max-height: 86vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.ui-card__header {
+  border-bottom: 1px solid var(--borde-color);
+  padding-bottom: 1.5rem;
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.ui-card__title {
+  color: var(--color-texto);
+  font-weight: 500;
+  font-size: 2.6rem;
+  margin: 0;
+}
+
+.ui-card__body {
+  overflow: auto;
+}
+
+/* =======================================================
+   Estilos “clonados” de PredioModal para inputs y textos
+   aplicados al CONTENIDO proyectado (ng-content)
+   ======================================================= */
+:host ::ng-deep .ui-form .row {
+  margin-bottom: 2rem;
+}
+
+:host ::ng-deep .ui-form label {
+  display: block;
+  font-weight: 500;
+  color: var(--color-texto);
+  margin-bottom: .8rem;
+  font-size: 1.6rem;
+}
+
+:host ::ng-deep .ui-form input[type="text"],
+:host ::ng-deep .ui-form input[type="datetime-local"],
+:host ::ng-deep .ui-form select,
+:host ::ng-deep .ui-form textarea {
+  width: 100%;
+  border: 1px solid #ced4da;
+  border-radius: 6px;
+  font-family: 'Lexend', sans-serif;
+  font-size: 1.6rem;
+  font-weight: 400;
+  color: var(--color-texto);
+  box-sizing: border-box;
+  padding: 0 1.5rem;
+  height: 40px;
+}
+
+:host ::ng-deep .ui-form textarea {
+  min-height: 96px;
+  padding: 1rem 1.5rem;
+  line-height: 1.5;
+  resize: vertical;
+}
+
+:host ::ng-deep .ui-form input::placeholder,
+:host ::ng-deep .ui-form textarea::placeholder {
+  font-family: 'Lexend', sans-serif;
+  font-weight: 500;
+  font-size: 1.6rem;
+  color: #72767A;
+}
+
+:host ::ng-deep .ui-form input:focus,
+:host ::ng-deep .ui-form select:focus,
+:host ::ng-deep .ui-form textarea:focus {
+  outline: none;
+  border-color: var(--color-azul);
+  box-shadow: 0 0 0 3px rgba(0, 86, 172, 0.2);
+}
+
+/* Acciones del formulario (alineación de botones) */
+:host ::ng-deep .ui-actions {
+  margin-top: 1rem;
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+}
+
+/* Botón primario – igual estilo de register */
+:host ::ng-deep .btn-primary {
+  min-width: 160px;
+  height: 40px;
+  padding: 0 1.6rem;
+  font-size: 1.8rem;
+  font-weight: 500;
+  border: none;
+  border-radius: 8px;
+  background-color: var(--color-azul);
+  color: var(--color-blanco);
+  cursor: pointer;
+  transition: background-color .2s ease;
+  font-family: 'Lexend', sans-serif;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+:host ::ng-deep .btn-primary:hover { background-color: #004386; }
+:host ::ng-deep .btn-primary:disabled { background-color: #aeb8c2; cursor: not-allowed; }
+
+/* Botón contorno, en tu azul */
+:host ::ng-deep .btn-outline {
+  min-width: 140px;
+  height: 40px;
+  padding: 0 1.6rem;
+  font-size: 1.6rem;
+  font-weight: 600;
+  background: #fff;
+  color: var(--color-azul);
+  border: 2px solid var(--color-azul);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: box-shadow .2s ease, transform .1s ease;
+  font-family: 'Lexend', sans-serif;
+}
+
+:host ::ng-deep .btn-outline:hover {
+  box-shadow: 0 6px 12px rgba(0,86,172,.12);
+  transform: translateY(-1px);
+}
+
+/* Mensajes de error dentro de formularios */
+:host ::ng-deep .error-message,
+:host ::ng-deep .error-text {
+  color: var(--color-rojo);
+  font-size: 1.4rem;
+  font-weight: 500;
+  margin-top: .6rem;
+}
