@@ -24,6 +24,7 @@
 
 /* ====== Tarjeta ====== */
 .ui-card {
+  position: relative;
   background: var(--color-blanco);
   padding: 3rem 4rem;
   border-radius: 12px;
@@ -52,6 +53,27 @@
 .ui-card__body {
   overflow: auto;
 }
+
+/* Busy overlay dentro de la tarjeta */
+.ui-busy {
+  position: absolute;
+  inset: 0;
+  background: rgba(255,255,255,.65);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  border-radius: 12px;
+  font-weight: 600;
+  color: var(--color-azul);
+}
+.ui-busy .spinner {
+  width: 22px; height: 22px; border-radius: 999px;
+  border: 3px solid rgba(0,86,172,.25);
+  border-top-color: var(--color-azul);
+  animation: spin 800ms linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
 
 /* =======================================================
    Estilos “clonados” de PredioModal para inputs y textos

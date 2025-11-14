@@ -12,5 +12,11 @@
       <!-- Aquí se inyecta tu formulario/contenido -->
       <ng-content></ng-content>
     </section>
+
+    <!-- Busy overlay -->
+    <div class="ui-busy" *ngIf="busy" aria-live="polite" aria-busy="true">
+      <div class="spinner"></div>
+      <span>Guardando…</span>
+    </div>
   </div>
 </div>

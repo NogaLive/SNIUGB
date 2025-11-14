@@ -83,7 +83,7 @@
   <main class="dashboard-main">
     <section class="predio-selector-wrapper">
       <label for="predio-select">Viendo datos del predio:</label>
-      <select id="predio-select" [(ngModel)]="predioActivoCodigo" (ngModelChange)="onPredioChange()">
+      <select id="predio-select" name="predioActivoCodigo" [(ngModel)]="predioActivoCodigo" (ngModelChange)="onPredioChange()">
         <option *ngIf="!predioActivoCodigo && isLoading" value="" disabled>Cargando predios...</option>
         <option *ngFor="let predio of listaDePredios" [value]="predio.codigo_predio">
           {{ predio.nombre_predio }} ({{ predio.codigo_predio }})
@@ -184,7 +184,7 @@
       <p class="gestion-hint">Registra producción individual, controles de calidad masivos y sanitarios.</p>
     </section>
 
-    <!-- Tabla dinámica -->
+    <!-- Tabla dinámica inferior -->
     <section class="card hato-table-wrapper">
       <div class="card-header"><h3>{{ tablaTitulo }}</h3></div>
 
@@ -228,7 +228,8 @@
         activeModal === 'sanitario' ? 'Registrar Evento Sanitario (masivo)' :
         activeModal === 'produccion' ? 'Registrar Evento de Producción' :
         activeModal === 'calidad' ? 'Control de Calidad (masivo)' :
-        activeModal === 'grupos' ? 'Grupos de Animales' : ''
+        activeModal === 'grupos' ? 'Grupos de Animales' :
+        activeModal === 'transfer_detalle' ? ('Transferencia #' + (selectedTransfer?.id || '')) : ''
       "
       (requestClose)="closeModal()">
 
@@ -237,17 +238,331 @@
         <!-- Buscar -->
         <form class="ui-form" *ngSwitchCase="'buscar'" (ngSubmit)="submitBuscar()">
           <div class="row">
-            <label for="cuiBus">CUI del animal</label>
-            <input id="cuiBus" type="text" [(ngModel)]="formBuscar.cui" name="cui" placeholder="Ej: 11500000015" />
+            <label for="cuiBus">Buscar por CUI</label>
+            <div class="single-search">
+              <input
+                id="cuiBus"
+                type="text"
+                [(ngModel)]="formBuscar.cui"
+                name="cui"
+                (input)="onBuscarCuiChange()"
+                placeholder="Escribe el CUI…"
+              />
+              <ul class="suggestions" *ngIf="buscarSuggestions.length">
+                <li
+                  *ngFor="let s of buscarSuggestions"
+                  (click)="seleccionarBuscarCui(s)"
+                >
+                  <strong>{{ s.cui }}</strong> — {{ s.nombre || 'Sin nombre' }}
+                </li>
+              </ul>
+            </div>
           </div>
-          <div class="ui-actions">
-            <button type="button" class="btn-outline" (click)="closeModal()">Cancelar</button>
-            <button type="submit" class="btn-primary" [disabled]="submitting">Buscar</button>
+
+          <div class="ui-actions ui-actions-right">
+            <!-- Sin botón Cancelar, se cierra haciendo click fuera del modal -->
+            <button type="submit" class="btn-primary" [disabled]="submitting || !formBuscar.cui">
+              Buscar
+            </button>
           </div>
         </form>
 
-        <!-- Eventos Sanitarios (masivo) -->
-        <form class="ui-form" *ngSwitchCase="'sanitario'" (ngSubmit)="submitSanitario()">
+
+        <!-- AGREGAR GANADO -->
+        <form class="ui-form" *ngSwitchCase="'agregar'" (ngSubmit)="submitAgregarGanado()">
+          <div class="row">
+            <label for="agNom">Nombre</label>
+            <input id="agNom" type="text" [(ngModel)]="formAgregar.nombre" name="agNom" />
+          </div>
+
+          <div class="row">
+            <label for="agSexo">Sexo</label>
+            <select id="agSexo" [(ngModel)]="formAgregar.sexo" name="agSexo">
+              <option value="MACHO">Macho</option>
+              <option value="HEMBRA">Hembra</option>
+            </select>
+          </div>
+
+          <div class="row">
+            <label for="agRaza">Raza</label>
+            <select id="agRaza" [(ngModel)]="formAgregar.raza" name="agRaza" required>
+              <option [ngValue]="null" disabled>Selecciona una raza…</option>
+              <option *ngFor="let r of razasCatalogo" [value]="r">{{ r }}</option>
+            </select>
+          </div>
+
+          <div class="row">
+            <label for="agNac">Fecha nacimiento</label>
+            <input id="agNac" type="date" [(ngModel)]="formAgregar.fecha_nacimiento" name="agNac" required />
+          </div>
+
+          <div class="ui-actions ui-actions-right">
+            <button type="submit" class="btn-primary" [disabled]="submitting">Guardar</button>
+          </div>
+        </form>
+
+        <!-- TRANSFERENCIAS -->
+        <form class="ui-form" *ngSwitchCase="'transferencias'" (ngSubmit)="crearTransferencia()">
+          <div class="row">
+            <label>Animales a transferir</label>
+            <div class="chip-input">
+              <div class="chips">
+                <span class="chip" *ngFor="let a of selectedAnimals; let i = index">
+                  {{ a.nombre || a.cui }} <button type="button" (click)="removeAnimal(i)">×</button>
+                </span>
+                <input
+                  type="text"
+                  [(ngModel)]="animalQuery"
+                  name="trAnimalQuery"
+                  (input)="onAnimalQueryChange()"
+                  placeholder="Escribe para buscar por CUI o nombre…"
+                />
+              </div>
+              <ul class="suggestions" *ngIf="animalSuggestions.length">
+                <li *ngFor="let s of animalSuggestions" (click)="addAnimal(s)">
+                  <strong>{{ s.cui }}</strong> — {{ s.nombre || 'Sin nombre' }}
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="row">
+            <label for="trDestino">Predio destino</label>
+            <select id="trDestino" [(ngModel)]="transfer.destino_predio" name="trDestino" required>
+              <option [ngValue]="null" disabled>Selecciona un predio propio…</option>
+              <option *ngFor="let p of prediosUsuario" [value]="p.codigo_predio">
+                {{ p.nombre_predio }} ({{ p.codigo_predio }})
+              </option>
+            </select>
+          </div>
+
+          <div class="ui-actions ui-actions-right">
+            <button type="submit" class="btn-primary" [disabled]="submitting">Crear solicitud</button>
+          </div>
+
+          <hr />
+
+          <div class="row">
+            <label>Solicitudes</label>
+            <div>
+              <select [(ngModel)]="transferScope" name="trScope" (change)="cargarTransferencias()">
+                <option value="mine">Salientes</option>
+                <option value="incoming">Entrantes</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="card-body table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>ID transferencia</th>
+                  <th>Origen</th>
+                  <th>Destino</th>
+                  <th># Animales</th>
+                  <th>Estado</th>
+                  <th>Acción</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let t of transferList">
+                  <td>
+                    <button type="button" class="link-button" (click)="verDetalleTransferencia(t)">
+                      {{ t.id }}
+                    </button>
+                  </td>
+                  <td>{{ t.origen_predio }}</td>
+                  <td>{{ t.destino_predio }}</td>
+                  <td>{{ t.cantidad }}</td>
+                  <td>{{ t.estado }}</td>
+                  <td>
+                    <button
+                      class="btn-ver-registro"
+                      *ngIf="t.es_entrante"
+                      (click)="aprobarTransf(t)"
+                      type="button"
+                    >Confirmar</button>
+
+                    <button
+                      class="btn-ver-registro"
+                      *ngIf="t.es_entrante"
+                      (click)="rechazarTransf(t)"
+                      type="button"
+                    >Rechazar</button>
+
+                    <button
+                      class="btn-ver-registro"
+                      *ngIf="!t.es_entrante && t.estado === 'pendiente'"
+                      (click)="cancelarTransf(t)"
+                      type="button"
+                    >Cancelar</button>
+                  </td>
+                </tr>
+                <tr *ngIf="!transferList?.length">
+                  <td colspan="6" class="empty-state">Sin transferencias.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </form>
+
+        <!-- Detalle de transferencia -->
+        <div *ngSwitchCase="'transfer_detalle'">
+          <div class="card-body table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>CUI</th>
+                  <th>Nombre</th>
+                  <th>Raza</th>
+                  <th>Sexo</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let a of transferAnimales">
+                  <td>{{ a.cui }}</td>
+                  <td>{{ a.nombre || 'Sin nombre' }}</td>
+                  <td>{{ a.raza }}</td>
+                  <td>{{ a.sexo }}</td>
+                </tr>
+                <tr *ngIf="!transferAnimales?.length">
+                  <td colspan="4" class="empty-state">Sin animales para esta transferencia.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+
+        <!-- REPORTES -->
+        <form class="ui-form" *ngSwitchCase="'reportes'" (ngSubmit)="descargarReporte()">
+          <div class="row">
+            <label for="repTipo">Tipo de reporte</label>
+            <select id="repTipo" [(ngModel)]="formReporte.tipo" name="repTipo" required>
+              <option *ngFor="let r of reportesDisponibles" [value]="r.key">{{ r.nombre }}</option>
+            </select>
+          </div>
+          <div class="row">
+            <label for="repPer">Periodo</label>
+            <select id="repPer" [(ngModel)]="formReporte.periodo" name="repPer">
+              <option value="hoy">Hoy</option><option value="semana">Semana</option><option value="mes">Mes</option>
+            </select>
+          </div>
+          <div class="ui-actions">
+            <button type="submit" class="btn-primary" [disabled]="submitting">Descargar</button>
+          </div>
+        </form>
+
+        <!-- INVENTARIO -->
+        <form class="ui-form" *ngSwitchCase="'inventario'" (ngSubmit)="crearInventario()">
+          <div class="row row-grid">
+            <div class="col">
+              <label for="invNom">Nuevo ítem</label>
+              <input id="invNom" type="text" [(ngModel)]="invNuevo.nombre" name="invNom" placeholder="Vacuna X / Insumo Y" required />
+            </div>
+            <div class="col">
+              <label for="invCant">Cantidad</label>
+              <input id="invCant" type="number" [(ngModel)]="invNuevo.cantidad" name="invCant" required />
+            </div>
+            <div class="col">
+              <label for="invUn">Unidad</label>
+              <select id="invUn" [(ngModel)]="invNuevo.unidad" name="invUn">
+                <option *ngFor="let u of unidadesMedida" [value]="u">{{ u }}</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="ui-actions ui-actions-right">
+            <button type="submit" class="btn-primary" [disabled]="submitting">Agregar</button>
+          </div>
+
+          <!-- Tabla -->
+          <div class="card-body table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Nombre</th>
+                  <th>Cantidad</th>
+                  <th>Unidad</th>
+                  <th>Editar</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let i of inventarioFiltrado">
+                  <td><input type="text" [(ngModel)]="i.nombre" [name]="'invNombre'+i.id"></td>
+                  <td><input type="number" [(ngModel)]="i.cantidad" [name]="'invCantidad'+i.id"></td>
+                  <td>
+                    <select [(ngModel)]="i.unidad" [name]="'invUnidad'+i.id">
+                      <option *ngFor="let u of unidadesMedida" [value]="u">{{ u }}</option>
+                    </select>
+                  </td>
+                  <td>
+                    <button class="btn-ver-registro" (click)="actualizarInventario(i)" type="button">Editar</button>
+                    <button class="btn-ver-registro" (click)="eliminarInventario(i)" type="button">Eliminar</button>
+                  </td>
+                </tr>
+                <tr *ngIf="!inventarioFiltrado.length">
+                  <td colspan="4" class="empty-state">Sin ítems en inventario.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </form>
+
+        <!-- Eventos Sanitarios (MASIVO con layout horizontal) -->
+        <form class="ui-form event-modal-form" *ngSwitchCase="'sanitario'" (ngSubmit)="submitSanitario()">
+          <!-- FILA 1: Fecha + ENFERMEDAD -->
+          <div class="row row-grid">
+            <div class="col">
+              <label for="fechaEnf">Fecha (Enfermedad)</label>
+              <input id="fechaEnf" type="datetime-local"
+                     [(ngModel)]="formSanitario.fecha_evento_enfermedad" name="fechaEnf" required />
+            </div>
+            <div class="col">
+              <label for="enfSel">Enfermedad</label>
+              <select id="enfSel"
+                      [(ngModel)]="formSanitario.tipo_evento_enfermedad_id" name="enfSel" required>
+                <option [ngValue]="null" disabled>Selecciona…</option>
+                <option *ngFor="let t of tipoSanidadEnfermedad" [value]="t.id">{{ t.nombre }}</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- FILA 2: Fecha (Tratamiento) + TRATAMIENTO + DOSIS -->
+          <div class="row row-grid">
+            <div class="col">
+              <label for="fechaTrat">Fecha (Tratamiento)</label>
+              <input id="fechaTrat" type="datetime-local"
+                     [(ngModel)]="formSanitario.fecha_evento_tratamiento" name="fechaTrat" />
+            </div>
+            <div class="col">
+              <label for="tratSel">Tratamiento (opcional)</label>
+              <select id="tratSel"
+                      [(ngModel)]="formSanitario.tipo_evento_tratamiento_id" name="tratSel">
+                <option [ngValue]="null">Sin tratamiento</option>
+                <option *ngFor="let t of tipoSanidadTratamiento" [value]="t.id">{{ t.nombre }}</option>
+              </select>
+            </div>
+            <div class="col">
+              <label for="dosisSan">Dosis</label>
+              <div class="inline">
+                <input id="dosisSan" type="number" step="0.01"
+                       [(ngModel)]="formSanitario.dosis" name="dosisSan" placeholder="5" />
+                <select [(ngModel)]="formSanitario.unidad_medida_dosis" name="umDosis">
+                  <option *ngFor="let u of unidadesMedida" [value]="u">{{ u }}</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- FILA 3: Observaciones -->
+          <div class="row full-span">
+            <label for="obsSan">Observaciones</label>
+            <textarea id="obsSan" [(ngModel)]="formSanitario.observaciones" name="obsSan"
+                      placeholder="Notas, síntomas, etc."></textarea>
+          </div>
+
+          <!-- Selección de Animales (ARRIBA) -->
           <div class="row">
             <label>Animales</label>
             <div class="chip-input">
@@ -255,7 +570,13 @@
                 <span class="chip" *ngFor="let a of selectedAnimals; let i = index">
                   {{ a.nombre || a.cui }} <button type="button" (click)="removeAnimal(i)">×</button>
                 </span>
-                <input type="text" [(ngModel)]="animalQuery" name="qSan" (input)="onAnimalQueryChange()" placeholder="Busca por CUI o nombre…" />
+                <input
+                  type="text"
+                  [(ngModel)]="animalQuery"
+                  name="sanAnimalQuery"
+                  (input)="onAnimalQueryChange()"
+                  placeholder="Escribe para buscar por CUI o nombre…"
+                />
               </div>
               <ul class="suggestions" *ngIf="animalSuggestions.length">
                 <li *ngFor="let s of animalSuggestions" (click)="addAnimal(s)">
@@ -265,83 +586,154 @@
             </div>
           </div>
 
-          <div class="row">
-            <label for="fechaSan">Fecha del evento</label>
-            <input id="fechaSan" type="datetime-local" [(ngModel)]="formSanitario.fecha_evento" name="fechaSan" required />
-          </div>
-          <div class="row">
-            <label for="tipoSan">Tipo de evento</label>
-            <select id="tipoSan" [(ngModel)]="formSanitario.tipo_evento" name="tipoSan" required>
-              <option>Vacunación</option>
-              <option>Tratamiento</option>
-              <option>Desparasitación</option>
-            </select>
-          </div>
-          <div class="row"><label for="prodSan">Producto / Medicamento</label>
-            <input id="prodSan" type="text" [(ngModel)]="formSanitario.producto_nombre" name="prodSan" placeholder="Nombre comercial" />
-          </div>
-          <div class="row"><label for="dosisSan">Dosis</label>
-            <input id="dosisSan" type="text" [(ngModel)]="formSanitario.dosis" name="dosisSan" placeholder="Ej: 5 ml" />
-          </div>
-          <div class="row"><label for="obsSan">Observaciones</label>
-            <textarea id="obsSan" [(ngModel)]="formSanitario.observaciones" name="obsSan"></textarea>
-          </div>
-
+          <!-- Acciones -->
           <div class="ui-actions">
-            <button type="button" class="btn-outline" (click)="closeModal()">Cancelar</button>
             <button type="submit" class="btn-primary" [disabled]="submitting">Guardar</button>
           </div>
+
+          <!-- SEPARADOR -->
+          <div class="zone-sep"></div>
+
+          <!-- TABLA DE REGISTROS (míos) -->
+          <div class="card-body table-container" *ngIf="sanitariosMios?.length; else noSanitarios">
+            <table>
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Fecha Enf.</th>
+                  <th>Tratamiento</th>
+                  <th>Dosis</th>
+                  <th>Animales</th>
+                  <th>Obs.</th>
+                  <th>Editar</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let r of sanitariosMios">
+                  <td>{{ r.id }}</td>
+                  <td>{{ r.fecha_evento_enfermedad | date:'dd/MM/yy HH:mm' }}</td>
+                  <td>{{ r.tipo_evento_tratamiento_id ? r.tipo_evento_tratamiento_id : '—' }}</td>
+                  <td>{{ r.dosis ? (r.dosis + ' ' + (r.unidad_medida_dosis || '')) : '—' }}</td>
+                  <td>{{ (r.animales_cui || []).join(', ') }}</td>
+                  <td>{{ r.observaciones || '—' }}</td>
+                  <td>
+                    <button
+                      class="btn-ver-registro"
+                      type="button"
+                      (click)="editarEventoSanitario(r)">
+                      Editar
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <ng-template #noSanitarios>
+            <div class="card-body"><p class="empty-state">Sin registros aún.</p></div>
+          </ng-template>
         </form>
 
         <!-- Evento de Producción (individual) -->
-        <form class="ui-form" *ngSwitchCase="'produccion'" (ngSubmit)="submitProduccion()">
+        <form class="ui-form event-modal-form" *ngSwitchCase="'produccion'" (ngSubmit)="submitProduccion()">
           <div class="row">
-            <label>Animal</label>
-            <div class="chip-input single">
-              <div class="chips">
-                <span class="chip" *ngFor="let a of selectedAnimals; let i=index">
-                  {{ a.nombre || a.cui }} <button type="button" (click)="removeAnimal(i)">×</button>
-                </span>
-                <input type="text" [(ngModel)]="animalQuery" name="qProd" (input)="onAnimalQueryChange()" placeholder="Busca por CUI o nombre…" />
-              </div>
-              <ul class="suggestions" *ngIf="animalSuggestions.length">
-                <li *ngFor="let s of animalSuggestions" (click)="addAnimal(s)">
+            <label for="prodAnimal">Animal</label>
+            <div class="single-search">
+              <input
+                id="prodAnimal"
+                type="text"
+                [(ngModel)]="produccionAnimalQuery"
+                name="prodAnimalQuery"
+                (input)="onProduccionAnimalChange()"
+                placeholder="Escribe para buscar por CUI o nombre…"
+              />
+              <ul class="suggestions" *ngIf="produccionAnimalSuggestions.length">
+                <li
+                  *ngFor="let s of produccionAnimalSuggestions"
+                  (click)="seleccionarProduccionAnimal(s)"
+                >
                   <strong>{{ s.cui }}</strong> — {{ s.nombre || 'Sin nombre' }}
                 </li>
               </ul>
             </div>
           </div>
 
-          <div class="row">
-            <label for="fechaProd">Fecha</label>
-            <input id="fechaProd" type="datetime-local" [(ngModel)]="formProduccion.fecha_evento" name="fechaProd" required />
+          <div class="row row-grid">
+            <div class="col">
+              <label for="fechaProd">Fecha</label>
+              <input id="fechaProd" type="datetime-local" [(ngModel)]="formProduccion.fecha_evento" name="fechaProd" required />
+            </div>
+            <div class="col">
+              <label for="prodTipo">Producto</label>
+              <select id="prodTipo" [(ngModel)]="formProduccion.producto" name="prodTipo">
+                <option value="LECHE">Leche</option>
+                <option value="CARNE">Carne</option>
+                <option value="CUERO">Cuero</option>
+              </select>
+            </div>
+            <div class="col">
+              <label for="valorProd">Valor</label>
+              <div class="inline">
+                <input id="valorProd" type="text" [(ngModel)]="formProduccion.valor" name="valorProd" placeholder="Ej: 12 (L) / 250 (kg)" />
+                <select [(ngModel)]="formProduccion.unidad_medida" name="umProd" required>
+                  <option *ngFor="let u of unidadesMedida" [value]="u">{{ u }}</option>
+                </select>
+              </div>
+            </div>
           </div>
-          <div class="row">
-            <label for="prodTipo">Producto</label>
-            <select id="prodTipo" [(ngModel)]="formProduccion.producto" name="prodTipo">
-              <option value="LECHE">Leche</option>
-              <option value="CARNE">Carne</option>
-              <option value="CUERO">Cuero</option>
-            </select>
-          </div>
-          <div class="row">
-            <label for="valorProd">Valor</label>
-            <input id="valorProd" type="text" [(ngModel)]="formProduccion.valor" name="valorProd" placeholder="Ej: 12 L / 250 kg" />
-          </div>
-          <div class="row">
+
+          <div class="row full-span">
             <label for="obsProd">Observaciones</label>
             <textarea id="obsProd" [(ngModel)]="formProduccion.observaciones" name="obsProd"></textarea>
           </div>
 
           <div class="ui-actions">
-            <button type="button" class="btn-outline" (click)="closeModal()">Cancelar</button>
             <button type="submit" class="btn-primary" [disabled]="submitting">Guardar</button>
           </div>
+
+          <div class="zone-sep"></div>
+
+          <!-- Tabla Producción (mía) -->
+          <div class="card-body table-container" *ngIf="produccionesMias?.length; else noProd">
+            <table>
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Fecha</th>
+                  <th>CUI</th>
+                  <th>Evento</th>
+                  <th>Valor</th>
+                  <th>Obs.</th>
+                  <th>Editar</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let r of produccionesMias">
+                  <td>{{ r.id }}</td>
+                  <td>{{ r.fecha_evento | date:'dd/MM/yy HH:mm' }}</td>
+                  <td>{{ r.animal_cui }}</td>
+                  <td>{{ r.tipo_evento }}</td>
+                  <td>{{ r.valor_cantidad || r.valor }} {{ r.unidad_medida || '' }}</td>
+                  <td>{{ r.observaciones || '—' }}</td>
+                  <td>
+                    <button
+                      class="btn-ver-registro"
+                      type="button"
+                      (click)="editarEventoProduccion(r)">
+                      Editar
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <ng-template #noProd>
+            <div class="card-body"><p class="empty-state">Sin registros de producción.</p></div>
+          </ng-template>
         </form>
 
         <!-- Control de Calidad (multi) -->
-        <form class="ui-form" *ngSwitchCase="'calidad'" (ngSubmit)="submitCalidad()">
-          <div class="row">
+        <form class="ui-form event-modal-form" *ngSwitchCase="'calidad'" (ngSubmit)="submitCalidad()">
+          <div class="row full-span">
             <label>Animales</label>
             <div class="chip-input">
               <div class="chips">
@@ -358,58 +750,175 @@
             </div>
           </div>
 
-          <div class="row">
-            <label for="fechaCal">Fecha</label>
-            <input id="fechaCal" type="datetime-local" [(ngModel)]="formCalidad.fecha_evento" name="fechaCal" required />
+          <div class="row row-grid">
+            <div class="col">
+              <label for="fechaCal">Fecha</label>
+              <input id="fechaCal" type="datetime-local" [(ngModel)]="formCalidad.fecha_evento" name="fechaCal" required />
+            </div>
           </div>
-          <div class="row">
-            <label for="prodCal">Producto</label>
-            <select id="prodCal" [(ngModel)]="formCalidad.producto" name="prodCal">
-              <option value="LECHE">Leche</option>
-              <option value="CARNE">Carne</option>
-              <option value="CUERO">Cuero</option>
-            </select>
+
+          <div class="row row-grid">
+            <div class="col">
+              <label for="prodCal">Producto</label>
+              <input id="prodCal" type="text" [(ngModel)]="formCalidad.producto" name="prodCal" required />
+            </div>
+            <div class="col">
+              <label for="metCal">Método</label>
+              <select id="metCal" [(ngModel)]="formCalidad.metodo_id" name="metCal" required>
+                <option [ngValue]="null" disabled>Selecciona…</option>
+                <option *ngFor="let m of metodosControlCalidad" [value]="m.id">{{ m.nombre }}</option>
+              </select>
+            </div>
           </div>
-          <div class="row">
-            <label for="valorCal">Valor</label>
-            <input id="valorCal" type="text" [(ngModel)]="formCalidad.valor" name="valorCal" placeholder="Cantidad analizada" />
+
+          <div class="row row-grid">
+            <div class="col">
+              <label for="valCal">Valor</label>
+              <input id="valCal" type="number" [(ngModel)]="formCalidad.valor_cantidad" name="valCal" required />
+            </div>
+            <div class="col">
+              <label for="umCal">Unidad</label>
+              <select id="umCal" [(ngModel)]="formCalidad.unidad_medida" name="umCal" required>
+                <option *ngFor="let u of unidadesMedida" [value]="u">{{ u }}</option>
+              </select>
+            </div>
           </div>
-          <div class="row">
-            <label for="umCal">Unidad de medida</label>
-            <input id="umCal" type="text" [(ngModel)]="formCalidad.unidad_medida" name="umCal" placeholder="kg, L, ml, u, doc, etc." />
-          </div>
-          <div class="row">
+
+          <div class="row full-span">
             <label for="obsCal">Observaciones</label>
             <textarea id="obsCal" [(ngModel)]="formCalidad.observaciones" name="obsCal"></textarea>
           </div>
 
           <div class="ui-actions">
-            <button type="button" class="btn-outline" (click)="closeModal()">Cancelar</button>
             <button type="submit" class="btn-primary" [disabled]="submitting">Aplicar a seleccionados</button>
           </div>
+
+          <div class="zone-sep"></div>
+
+          <!-- Tabla Calidad (mía) -->
+          <div class="card-body table-container" *ngIf="calidadMios?.length; else noCal">
+            <table>
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Fecha</th>
+                  <th>Método</th>
+                  <th>Producto</th>
+                  <th>Valor</th>
+                  <th>Animales</th>
+                  <th>Obs.</th>
+                  <th>Editar</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let r of calidadMios">
+                  <td>{{ r.id }}</td>
+                  <td>{{ r.fecha_evento | date:'dd/MM/yy HH:mm' }}</td>
+                  <td>{{ r.tipo_evento_calidad_id }}</td>
+                  <td>{{ r.producto }}</td>
+                  <td>{{ r.valor_cantidad }} {{ r.unidad_medida || '' }}</td>
+                  <td>{{ (r.animales_cui || []).join(', ') }}</td>
+                  <td>{{ r.observaciones || '—' }}</td>
+                  <td>
+                    <button
+                      class="btn-ver-registro"
+                      type="button"
+                      (click)="editarEventoCalidad(r)">
+                      Editar
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <ng-template #noCal>
+            <div class="card-body"><p class="empty-state">Sin controles registrados.</p></div>
+          </ng-template>
         </form>
 
-        <!-- Placeholders -->
-        <div class="ui-form" *ngSwitchCase="'agregar'">
-          <p>Formulario de alta de ganado (pendiente de conectar a endpoint).</p>
-          <div class="ui-actions"><button type="button" class="btn-outline" (click)="closeModal()">Cerrar</button></div>
-        </div>
-        <div class="ui-form" *ngSwitchCase="'transferencias'">
-          <p>Gestión de transferencias (pendiente).</p>
-          <div class="ui-actions"><button type="button" class="btn-outline" (click)="closeModal()">Cerrar</button></div>
-        </div>
-        <div class="ui-form" *ngSwitchCase="'reportes'">
-          <p>Selector de reportes y filtros (pendiente).</p>
-          <div class="ui-actions"><button type="button" class="btn-outline" (click)="closeModal()">Cerrar</button></div>
-        </div>
-        <div class="ui-form" *ngSwitchCase="'inventario'">
-          <p>Inventario (pendiente de exponer endpoints).</p>
-          <div class="ui-actions"><button type="button" class="btn-outline" (click)="closeModal()">Cerrar</button></div>
-        </div>
-        <div class="ui-form" *ngSwitchCase="'grupos'">
-          <p>Crear y gestionar grupos de animales (pendiente).</p>
-          <div class="ui-actions"><button type="button" class="btn-outline" (click)="closeModal()">Cerrar</button></div>
-        </div>
+        <!-- GRUPOS -->
+        <form class="ui-form" *ngSwitchCase="'grupos'" (ngSubmit)="guardarGrupo()">
+          <div class="row">
+            <label for="grupoSel">Grupo</label>
+            <div class="single-search">
+              <select
+                id="grupoSel"
+                [(ngModel)]="grupoSeleccionadoNombre"
+                name="grupoSel"
+                (change)="onGrupoChange()"
+              >
+                <option [ngValue]="null" disabled>Selecciona un grupo…</option>
+                <option *ngFor="let g of grupos" [ngValue]="g.nombre">{{ g.nombre }}</option>
+                <option [ngValue]="'__nuevo__'">➕ Crear grupo…</option>
+              </select>
+
+              <input
+                *ngIf="modoCrearGrupo"
+                type="text"
+                [(ngModel)]="grupoNuevoNombre"
+                name="grupoNuevoNombre"
+                placeholder="Nombre del nuevo grupo"
+              />
+            </div>
+          </div>
+
+          <!-- Selección de animales masiva -->
+          <div class="row">
+            <label>Animales</label>
+            <div class="chip-input">
+              <div class="chips">
+                <span class="chip" *ngFor="let a of selectedAnimals; let i=index">
+                  {{ a.nombre || a.cui }} <button type="button" (click)="removeAnimal(i)">×</button>
+                </span>
+                <input
+                  type="text"
+                  [(ngModel)]="animalQuery"
+                  name="grupoAnimalQuery"
+                  (input)="onAnimalQueryChange()"
+                  placeholder="Escribe para buscar por CUI o nombre…"
+                />
+              </div>
+              <ul class="suggestions" *ngIf="animalSuggestions.length">
+                <li *ngFor="let s of animalSuggestions" (click)="addAnimal(s)">
+                  <strong>{{ s.cui }}</strong> — {{ s.nombre || 'Sin nombre' }}
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="ui-actions ui-actions-right">
+            <button type="submit" class="btn-primary" [disabled]="submitting">
+              Guardar
+            </button>
+          </div>
+
+          <hr />
+
+          <div class="card-body table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Grupo</th>
+                  <th># Animales</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let g of grupos">
+                  <td>{{ g.nombre }}</td>
+                  <td>{{ g.cantidad_animales }}</td>
+                  <td>
+                    <button type="button" class="btn-ver-registro" (click)="editarGrupo(g)">Editar</button>
+                    <button type="button" class="btn-ver-registro" (click)="eliminarGrupo(g)">Eliminar</button>
+                  </td>
+                </tr>
+                <tr *ngIf="!grupos?.length">
+                  <td colspan="3" class="empty-state">Sin grupos creados.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </form>
 
       </ng-container>
     </app-ui-modal>

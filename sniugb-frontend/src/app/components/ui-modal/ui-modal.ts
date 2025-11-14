@@ -1,4 +1,4 @@
-import { Component, ElementRef, EventEmitter, HostListener, Input, Output, ViewChild } from '@angular/core';
+import { Component, ElementRef, EventEmitter, Input, Output, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 @Component({
@@ -14,6 +14,9 @@ export class UiModalComponent {
 
   /** Título del modal (barra superior) */
   @Input() title = '';
+
+  /** Modo ocupado: muestra overlay/spinner y bloquea interacción */
+  @Input() busy = false;
 
   /** Emite cuando se solicita cierre */
   @Output() requestClose = new EventEmitter<void>();
@@ -41,9 +44,5 @@ export class UiModalComponent {
 
   // Cancelamos la propagación dentro de la tarjeta
   stop(ev: Event) { ev.stopPropagation(); }
-
-  // Nota: No cerramos con ESC para cumplir tu regla
-  // Si en el futuro lo deseas, descomenta:
-  // @HostListener('document:keydown.escape', ['$event'])
-  // onEsc(_ev: Event) { this.requestClose.emit(); }
 }
+  

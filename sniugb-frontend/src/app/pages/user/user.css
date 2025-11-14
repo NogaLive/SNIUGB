@@ -290,3 +290,114 @@
 }
 .chip-input .suggestions li:hover{ background:#f6f9ff; }
 .chip-input.single .chips .chip{ margin-right:.4rem; }
+
+/* ====== NUEVO: layout horizontal del modal y separador ====== */
+.row-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1.2rem;
+}
+.row-grid .col { display: flex; flex-direction: column; }
+.row-grid .inline { display: grid; grid-template-columns: 1fr 140px; gap: .8rem; align-items: center; }
+
+/* separador entre formulario (arriba) y tabla (abajo) */
+.zone-sep {
+  margin: 1.6rem 0;
+  height: 1px;
+  background: var(--borde-color);
+}
+
+/* ===== Ajustes de modales (layout y scroll) ===== */
+
+/* Formularios dentro de los modales: columnas limpias y sin overflow horizontal */
+.ui-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+  max-width: 100%;
+}
+
+.ui-form .row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+/* Inputs y selects uniformes (incluye fechas y dosis) */
+.ui-form .row input[type="text"],
+.ui-form .row input[type="number"],
+.ui-form .row input[type="date"],
+.ui-form .row input[type="datetime-local"],
+.ui-form .row select,
+.ui-form .row textarea {
+  width: 100%;
+  padding: 0.7rem 1rem;
+  border-radius: 8px;
+  border: 1px solid #ced4da;
+  font-family: 'Lexend', sans-serif;
+  font-size: 1.4rem;
+  box-sizing: border-box;
+}
+
+.ui-form .row textarea {
+  min-height: 7rem;
+  resize: vertical;
+}
+
+/* Formularios de modales con tabla de registros abajo */
+.event-modal-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr)); /* 2 columnas */
+  grid-auto-rows: auto;
+  column-gap: 2rem;
+  row-gap: 1.2rem;
+}
+
+/* Cada fila del formulario se comporta como un item del grid */
+.event-modal-form > .row,
+.event-modal-form > .row.row-grid,
+.event-modal-form > .ui-actions,
+.event-modal-form > .zone-sep,
+.event-modal-form > .card-body {
+  width: 100%;
+}
+
+/* Filas que deben ocupar todo el ancho (1 a 2 columnas) */
+.event-modal-form > .row.row-grid,
+.event-modal-form > .row.full-span,
+.event-modal-form > .ui-actions,
+.event-modal-form > .zone-sep,
+.event-modal-form > .card-body.table-container {
+  grid-column: 1 / -1;
+}
+
+/* Asegurar que las tablas dentro del modal sean cómodas */
+app-ui-modal .card-body.table-container {
+  overflow-x: hidden;
+  max-height: 40vh;          /* la tabla puede crecer pero no se come todo el modal */
+  overflow-y: auto;
+}
+
+app-ui-modal .card-body.table-container table {
+  width: 100%;
+  table-layout: fixed;
+}
+
+app-ui-modal .card-body.table-container th,
+app-ui-modal .card-body.table-container td {
+  white-space: normal;
+  word-wrap: break-word;
+}
+
+.link-button {
+  background: none;
+  border: none;
+  color: #0056AC;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0;
+  font: inherit;
+}
+.link-button:hover {
+  opacity: 0.8;
+}

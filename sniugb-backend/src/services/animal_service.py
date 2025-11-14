@@ -36,16 +36,19 @@ def generar_nuevo_cui(db: Session, departamento_nombre: str, raza_nombre: str) -
         raise ValueError("El departamento especificado no es válido.")
     codigo_depto = depto_obj.codigo_ubigeo
 
-    # 3. Obtener el siguiente número de serie
+        # 3. Obtener el siguiente número de serie
     # La consulta ahora filtra tanto por departamento como por dígito de especie.
     query = text(
-        f"SELECT MAX(CAST(SUBSTRING(cui FROM 4 FOR 7) AS INTEGER)) "
-        f"FROM animales "
-        f"WHERE SUBSTRING(cui FROM 2 FOR 2) = '{codigo_depto}' "
-        f"AND SUBSTRING(cui FROM 1 FOR 1) = '{digito_especie}'"
+        "SELECT MAX(CAST(SUBSTRING(cui FROM 4 FOR 7) AS INTEGER)) "
+        "FROM animales "
+        "WHERE SUBSTRING(cui FROM 2 FOR 2) = :codigo_depto "
+        "AND SUBSTRING(cui FROM 1 FOR 1) = :digito_especie"
     )
-    ultimo_serial = db.execute(query).scalar_one_or_none()
-    
+    ultimo_serial = db.execute(
+        query,
+        {"codigo_depto": codigo_depto, "digito_especie": str(digito_especie)}
+    ).scalar_one_or_none()
+
     nuevo_serial = (ultimo_serial or 0) + 1
     serial_str = str(nuevo_serial).zfill(7)
 

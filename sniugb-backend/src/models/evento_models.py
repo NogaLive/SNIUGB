@@ -1,3 +1,4 @@
+# src/models/evento_models.py
 from __future__ import annotations
 from typing import Optional, List
 from pydantic import BaseModel, Field, validator
@@ -100,6 +101,33 @@ class ControlCalidadResponseSchema(BaseModel):
     valor_cantidad: Optional[float] = None
     unidad_medida: Optional[str] = None
     observaciones: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+
+# ============================================================
+# HISTÓRICOS (opcional: partos, muerte, compra, etc.)
+# ============================================================
+
+class EventoHistoricoCreateSchema(BaseModel):
+    animal_cui: str
+    fecha_evento: datetime
+    tipo: str  # de acuerdo a tu modelo en BD
+    valor: Optional[float] = None
+    unidad: Optional[str] = None
+    observaciones: Optional[str] = None
+    descendencia_cuis: Optional[List[str]] = None  # se guardará como CSV
+
+class EventoHistoricoResponseSchema(BaseModel):
+    id: int
+    animal_cui: str
+    fecha_evento: datetime
+    tipo: str
+    valor: Optional[float] = None
+    unidad: Optional[str] = None
+    observaciones: Optional[str] = None
+    descendencia_cuis: Optional[str] = None
 
     class Config:
         from_attributes = True

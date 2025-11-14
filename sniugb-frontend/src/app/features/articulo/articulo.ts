@@ -1,7 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule, NgFor, NgIf, DatePipe} from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 
 import { ApiService } from '../../services/api';
 import { Articulo } from '../../models/articulo.model';
@@ -18,7 +17,7 @@ export class ArticuloComponent implements OnInit {
   backendUrl = 'http://127.0.0.1:8000';
   
   articulo: Articulo | null = null;
-  contenidoSanitizado: SafeHtml = '';
+  contenidoSanitizado: string = '';
   
   // Para la barra lateral
   articulosPopulares: Articulo[] = [];
@@ -27,8 +26,7 @@ export class ArticuloComponent implements OnInit {
 
   constructor(
     private route: ActivatedRoute,
-    private apiService: ApiService,
-    private sanitizer: DomSanitizer
+    private apiService: ApiService
   ) {}
 
   ngOnInit(): void {
@@ -47,8 +45,8 @@ export class ArticuloComponent implements OnInit {
     this.apiService.getArticuloBySlug(slug).subscribe((data: Articulo) => {
       this.articulo = data;
       if (this.articulo) {
-        // Sanitiza el contenido HTML del backend para renderizarlo de forma segura
-        this.contenidoSanitizado = this.sanitizer.bypassSecurityTrustHtml(this.articulo.contenido_html);
+        // Deja que Angular sanitice automáticamente el HTML.
+        this.contenidoSanitizado = this.articulo.contenido_html;
       }
     });
   }
